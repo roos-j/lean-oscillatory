@@ -34,6 +34,8 @@ variable {φ : ℝ → ℝ}
 
 section SpecialCase
 
+abbrev c (k : ℕ) : ℝ := 5 * 2 ^ (k - 1) - 2
+
 #check c
 
 -- Auxiliary lemma: adapt appropriately
@@ -52,22 +54,58 @@ example {f : ℝ → ℝ} (hf : Continuous f) (hf2 : ∀ x, 1 ≤ |f x|) : (∀ 
 #check deriv_smul
 #check integral_mul_deriv_eq_deriv_mul
 #check integral_congr
+
+#check mul_div_cancel₀
+
 /-- **Van der Corput's lemma**. Special case of `abs_integral_exp_mul_I_le_of_order_one`
   where the amplitude function is constant and scalar.  -/
 theorem abs_integral_exp_mul_I_le_of_order_one'
-    (hφ : ContDiffOn ℝ 1 φ [[a, b]]) (h : ∀ x ∈ [[a, b]], 1 ≤ |deriv φ x|)
-    (h' : Monotone φ) (hL : L ≠ 0) : ‖∫ x in a..b, exp (L * φ x * I)‖ ≤ c 1 * |L|⁻¹ := by
+    (hφ : ContDiffOn ℝ 2 φ [[a, b]]) (h : ∀ x ∈ [[a, b]], 1 ≤ |deriv φ x|)
+    (h' : Monotone φ) (hL : 0 < L) : ‖∫ x in a..b, exp (L * φ x * I)‖ ≤ c 1 * L⁻¹ := by
   wlog h : ∀ x ∈ [[a, b]], 1 ≤ deriv φ x; focus {
     sorry
   }
-  sorry
+  let φ' := fun x ↦ deriv φ x
+  -- have φ'_eq {x : ℝ} : φ' x = deriv φ x := by rfl
+  let u := fun x ↦ 1 / (L * φ' x * I)
+  let v := fun x ↦ exp (L * φ x * I)
+  let u' := fun x ↦ deriv u x
+  let v' := fun x ↦ deriv v x
+  have hasDeriv_u : ∀ x ∈ [[a, b]], HasDerivAt u (u' x) x := by sorry
+  have hasDeriv_v : ∀ x ∈ [[a, b]], HasDerivAt v (v' x) x := by sorry
+  have v'_eq : ∀ x ∈ [[a, b]], v' x = (L * φ' x * I) * v x := by sorry
+  have hnz : ∀ x ∈ [[a, b]], L * φ' x * I ≠ 0 := by sorry
+  have h1 : ∫ x in a..b, exp (L * φ x * I) = u b * v b - u a * v a - ∫ x in a..b, u' x * v x := by
+    suffices h : ∀ x ∈ [[a, b]], exp (L * φ x * I) = u x * v' x by
+      rw [integral_congr h]
+      refine integral_mul_deriv_eq_deriv_mul hasDeriv_u hasDeriv_v ?_ ?_
+      · sorry
+      · sorry
+    intro x hx
+    rw [v'_eq _ hx]
+    simp only [u, v]
+    field_simp [hnz _ hx]
+  have h2 : ‖u b * v b - u a * v a‖ ≤ 2 * L⁻¹ := by
+    sorry
+  have h3 : ‖∫ x in a..b, u' x * v x‖ ≤ L⁻¹ := by
+    have hφ' : ∀ x ∈ [[a, b]], ‖deriv (fun x ↦ 1 / φ' x) x‖ = deriv (fun x ↦ -1 / φ' x) x := by
+      sorry
+    sorry
+  calc
+    _ ≤ ‖∫ x in a..b, u' x * v x‖ + ‖u b * v b - u a * v a‖ := by
+      rw [h1, sub_eq_neg_add]
+      nth_rewrite 2 [← norm_neg]
+      exact norm_add_le _ _
+    _ ≤ L⁻¹ + 2 * L⁻¹ := by gcongr
+    _ = _ := by ring
+
 
 
 /-- **Van der Corput's lemma**. Special case of `abs_integral_exp_mul_I_le_of_order_ge_two`
   where the amplitude function is constant and scalar.  -/
 theorem abs_integral_exp_mul_I_le_of_order_ge_two' (k : ℕ) (hk : 2 ≤ k)
     (hφ : ContDiffOn ℝ k φ ([[a, b]])) (h : ∀ x ∈ [[a, b]], 1 ≤ |iteratedDeriv k φ x|)
-    (hL : L ≠ 0) : ‖∫ x in a..b, exp (L * φ x * I)‖ ≤ c k * |L| ^ (- (1 : ℝ) / k) := by
+    (hL : 0 < L) : ‖∫ x in a..b, exp (L * φ x * I)‖ ≤ c k * L ^ (- (1 : ℝ) / k) := by
   -- have h1 : ∫ x in a..b, exp (L * φ x * I) = ∫ x in a..b,
   sorry
 

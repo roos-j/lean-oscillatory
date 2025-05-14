@@ -18,8 +18,6 @@ open intervalIntegral Interval
 variable {a b : ℝ} {L : ℝ}
 variable {φ : ℝ → ℝ}
 
-abbrev c (k : ℕ) : ℝ := 5 * 2 ^ (k - 1) - 2
-
 /-- Complex exponential `exp (x * I)` -/
 abbrev e (x : ℝ) := exp (x * I)
 
