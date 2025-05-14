@@ -79,7 +79,7 @@ theorem abs_integral_exp_mul_I_le_of_order_one'
     suffices h : ∀ x ∈ [[a, b]], exp (L * φ x * I) = u x * v' x by
       rw [integral_congr h]
       refine integral_mul_deriv_eq_deriv_mul hasDeriv_u hasDeriv_v ?_ ?_
-      · sorry
+      · apply ContinuousOn.intervalIntegrable; sorry
       · sorry
     intro x hx
     rw [v'_eq _ hx]
