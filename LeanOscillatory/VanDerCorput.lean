@@ -1,4 +1,5 @@
 import LeanOscillatory.Basic
+import LeanOscillatory.ToMathlib
 
 /-!
 # Van der Corput's lemma
@@ -69,21 +70,45 @@ theorem abs_integral_exp_mul_I_le_of_order_one'
   -- have φ'_eq {x : ℝ} : φ' x = deriv φ x := by rfl
   let u := fun x ↦ 1 / (L * φ' x * I)
   let v := fun x ↦ exp (L * φ x * I)
-  let u' := fun x ↦ deriv u x
-  let v' := fun x ↦ deriv v x
-  have hasDeriv_u : ∀ x ∈ [[a, b]], HasDerivAt u (u' x) x := by sorry
-  have hasDeriv_v : ∀ x ∈ [[a, b]], HasDerivAt v (v' x) x := by sorry
-  have v'_eq : ∀ x ∈ [[a, b]], v' x = (L * φ' x * I) * v x := by sorry
-  have hnz : ∀ x ∈ [[a, b]], L * φ' x * I ≠ 0 := by sorry
+  let u' := fun x ↦ (deriv φ' x) * I / (L * (φ' x) ^ 2)
+  let v' := fun x ↦ L * φ' x * I * exp (L * φ x * I)
+  have hnz : ∀ x ∈ [[a, b]], L * φ' x * I ≠ 0 := by
+      intro x hx
+      have := h x hx
+      apply Complex.ne_zero_of_im_pos
+      simp
+      positivity
+  have hasDeriv_u : ∀ x ∈ [[a, b]], HasDerivAt u (u' x) x := by
+    intro x hx
+    have := h x hx
+    have hasDerivAt_φ' : HasDerivAt φ' (deriv φ' x) x := by sorry
+    convert HasDerivAt.div (hasDerivAt_const _ _) (.mul (.mul (hasDerivAt_const _ _) (.ofReal_comp hasDerivAt_φ')) (hasDerivAt_const _ _)) (hnz x hx) using 1
+    simp [mul_pow, u']
+    have : ofReal L * (φ' x) ^ 2 ≠ 0 := by norm_cast; positivity
+    have : ofReal L ^ 2 * (φ' x) ^ 2 ≠ 0 := by norm_cast; positivity
+    field_simp
+    ring
+  have hasDeriv_v : ∀ x ∈ [[a, b]], HasDerivAt v (v' x) x := by
+    intro x hx
+    have hasDerivAt_φ : HasDerivAt φ (φ' x) x := by sorry
+    convert HasDerivAt.cexp (.mul (.mul (hasDerivAt_const _ _) (.ofReal_comp hasDerivAt_φ)) (hasDerivAt_const _ _)) using 1
+    simp [v']
+    ring
   have h1 : ∫ x in a..b, exp (L * φ x * I) = u b * v b - u a * v a - ∫ x in a..b, u' x * v x := by
     suffices h : ∀ x ∈ [[a, b]], exp (L * φ x * I) = u x * v' x by
       rw [integral_congr h]
       refine integral_mul_deriv_eq_deriv_mul hasDeriv_u hasDeriv_v ?_ ?_
-      · apply ContinuousOn.intervalIntegrable; sorry
+      · apply ContinuousOn.intervalIntegrable
+        intro x hx
+        apply ContinuousWithinAt.div
+        · apply ContinuousWithinAt.mul
+          · sorry
+          · sorry
+        · sorry
+        · sorry
       · sorry
     intro x hx
-    rw [v'_eq _ hx]
-    simp only [u, v]
+    simp only [u, v, v']
     field_simp [hnz _ hx]
   have h2 : ‖u b * v b - u a * v a‖ ≤ 2 * L⁻¹ := by
     sorry
