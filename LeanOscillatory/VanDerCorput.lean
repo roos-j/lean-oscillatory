@@ -52,66 +52,83 @@ example {f : ℝ → ℝ} (hf : Continuous f) (hf2 : ∀ x, 1 ≤ |f x|) : (∀ 
   rw [hx] at hf2
   norm_num at hf2
 
+
+#check intermediate_value_Ioo
+
 #check deriv_smul
 #check integral_mul_deriv_eq_deriv_mul
 #check integral_congr
 
 #check mul_div_cancel₀
 
+#check HasDerivWithinAt.ofReal_comp
+#check HasDerivAt.ofReal_comp
+
 /-- **Van der Corput's lemma**. Special case of `abs_integral_exp_mul_I_le_of_order_one`
   where the amplitude function is constant and scalar.  -/
 theorem abs_integral_exp_mul_I_le_of_order_one'
-    (hφ : ContDiffOn ℝ 2 φ [[a, b]]) (h : ∀ x ∈ [[a, b]], 1 ≤ |deriv φ x|)
+    (hφ : ContDiffOn ℝ 2 φ [[a, b]]) (h : ∀ x ∈ [[a, b]], 1 ≤ |derivWithin φ [[a, b]] x|)
     (h' : Monotone φ) (hL : 0 < L) : ‖∫ x in a..b, exp (L * φ x * I)‖ ≤ c 1 * L⁻¹ := by
-  wlog h : ∀ x ∈ [[a, b]], 1 ≤ deriv φ x; focus {
+  have := hφ.continuousOn
+  letI φ' := fun x ↦ derivWithin φ [[a, b]] x
+  have hasDerivAt_φ : ∀ x ∈ [[a, b]], HasDerivWithinAt φ (φ' x) [[a, b]] x := fun x hx ↦
+    DifferentiableWithinAt.hasDerivWithinAt <| (hφ.contDiffWithinAt hx).differentiableWithinAt (by norm_num)
+  have : ContinuousOn φ' [[a, b]] := hφ.continuousOn_derivWithin_uIcc (by norm_num)
+
+  wlog h : ∀ x ∈ [[a, b]], 1 ≤ φ' x; focus {
     sorry
   }
-  let φ' := fun x ↦ deriv φ x
-  -- have φ'_eq {x : ℝ} : φ' x = deriv φ x := by rfl
-  let u := fun x ↦ 1 / (L * φ' x * I)
-  let v := fun x ↦ exp (L * φ x * I)
-  let u' := fun x ↦ (deriv φ' x) * I / (L * (φ' x) ^ 2)
-  let v' := fun x ↦ L * φ' x * I * exp (L * φ x * I)
+
+  letI φ'' := fun x ↦ derivWithin φ' [[a, b]] x
+  have hasDeriv_φ' : ∀ x ∈ [[a, b]], HasDerivWithinAt φ' (φ'' x) [[a, b]] x := fun x hx ↦
+    DifferentiableWithinAt.hasDerivWithinAt <|
+      (hφ.contDiffWithinAt hx).differentiableWithinAt_derivWithin_uIcc hx (by norm_num)
+  have : ContinuousOn φ'' [[a, b]] := by
+    convert hφ.continuousOn_iteratedDerivWithin_uIcc (m := 2) (by norm_num)
+    ext
+    rw [iteratedDerivWithin_two]
+
+  letI u := fun x ↦ 1 / (L * φ' x * I)
+  letI v := fun x ↦ exp (L * φ x * I)
+  letI u' := fun x ↦ (φ'' x) * I / (L * (φ' x) ^ 2)
+  letI v' := fun x ↦ L * φ' x * I * exp (L * φ x * I)
+
   have hnz : ∀ x ∈ [[a, b]], L * φ' x * I ≠ 0 := by
       intro x hx
       have := h x hx
       apply Complex.ne_zero_of_im_pos
       simp
       positivity
-  have hasDeriv_u : ∀ x ∈ [[a, b]], HasDerivAt u (u' x) x := by
+  have hasDeriv_u : ∀ x ∈ [[a, b]], HasDerivWithinAt u (u' x) [[a, b]] x := by
     intro x hx
     have := h x hx
-    have hasDerivAt_φ' : HasDerivAt φ' (deriv φ' x) x := by sorry
-    convert HasDerivAt.div (hasDerivAt_const _ _) (.mul (.mul (hasDerivAt_const _ _) (.ofReal_comp hasDerivAt_φ')) (hasDerivAt_const _ _)) (hnz x hx) using 1
+    convert HasDerivWithinAt.div (hasDerivWithinAt_const _ _ _) (.mul (.mul (hasDerivWithinAt_const _ _ _) (.ofReal_comp <| hasDeriv_φ' _ hx)) (hasDerivWithinAt_const _ _ _)) (hnz x hx) using 1
     simp [mul_pow, u']
     have : ofReal L * (φ' x) ^ 2 ≠ 0 := by norm_cast; positivity
     have : ofReal L ^ 2 * (φ' x) ^ 2 ≠ 0 := by norm_cast; positivity
     field_simp
     ring
-  have hasDeriv_v : ∀ x ∈ [[a, b]], HasDerivAt v (v' x) x := by
+  have hasDeriv_v : ∀ x ∈ [[a, b]], HasDerivWithinAt v (v' x) [[a, b]] x := by
     intro x hx
-    have hasDerivAt_φ : HasDerivAt φ (φ' x) x := by sorry
-    convert HasDerivAt.cexp (.mul (.mul (hasDerivAt_const _ _) (.ofReal_comp hasDerivAt_φ)) (hasDerivAt_const _ _)) using 1
+    convert HasDerivWithinAt.cexp (.mul (.mul (hasDerivWithinAt_const _ _ _) (.ofReal_comp <| hasDerivAt_φ _ hx)) (hasDerivWithinAt_const _ _ _)) using 1
     simp [v']
     ring
+
   have h1 : ∫ x in a..b, exp (L * φ x * I) = u b * v b - u a * v a - ∫ x in a..b, u' x * v x := by
-    suffices h : ∀ x ∈ [[a, b]], exp (L * φ x * I) = u x * v' x by
-      rw [integral_congr h]
-      refine integral_mul_deriv_eq_deriv_mul hasDeriv_u hasDeriv_v ?_ ?_
-      · apply ContinuousOn.intervalIntegrable
-        intro x hx
-        apply ContinuousWithinAt.div
-        · apply ContinuousWithinAt.mul
-          · sorry
-          · sorry
-        · sorry
-        · sorry
-      · sorry
+    suffices h'' : ∀ x ∈ [[a, b]], exp (L * φ x * I) = u x * v' x by
+      rw [integral_congr h'']
+      refine integral_mul_deriv_eq_deriv_mul_of_hasDerivWithinAt hasDeriv_u hasDeriv_v ?_ ?_
+      · have : ∀ x ∈ [[a, b]], (L : ℂ) * (φ' x) ^ 2 ≠ 0 :=
+          fun x hx ↦ by haveI := h x hx; norm_cast; positivity
+        exact ContinuousOn.intervalIntegrable (by fun_prop (discharger := assumption))
+      · exact ContinuousOn.intervalIntegrable (by fun_prop (discharger := assumption))
     intro x hx
     simp only [u, v, v']
     field_simp [hnz _ hx]
+
   have h2 : ‖u b * v b - u a * v a‖ ≤ 2 * L⁻¹ := by
     sorry
+
   have h3 : ‖∫ x in a..b, u' x * v x‖ ≤ L⁻¹ := by
     have hφ' : ∀ x ∈ [[a, b]], ‖deriv (fun x ↦ 1 / φ' x) x‖ = deriv (fun x ↦ -1 / φ' x) x := by
       sorry
