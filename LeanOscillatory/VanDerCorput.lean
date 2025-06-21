@@ -127,7 +127,25 @@ theorem abs_integral_exp_mul_I_le_of_order_one'
     field_simp [hnz _ hx]
 
   have h2 : ‖u b * v b - u a * v a‖ ≤ 2 * L⁻¹ := by
-    sorry
+    have : ∀ x ∈ [[a, b]], ‖u x * v x‖ ≤ L⁻¹ := by
+      intro x hx
+      simp only [u, v, norm_mul, norm_div, norm_one]
+      have h_exp_norm : ‖exp (L * φ x * I)‖ = 1 := by
+        simp only [← Complex.ofReal_mul]
+        exact Complex.norm_exp_ofReal_mul_I _
+      rw [h_exp_norm, mul_one, norm_I, mul_one, one_div, norm_real, norm_real, Real.norm_eq_abs, Real.norm_eq_abs, mul_inv, abs_of_pos hL]
+      rw [← mul_le_mul_left (by positivity : 0 < L)]
+      rw [← mul_assoc, mul_inv_cancel₀ hL.ne', one_mul, ← one_div]
+      rw [one_div_le]
+      . simp only[one_div_one]
+        exact le_trans (h x hx) (le_abs_self _)
+      . exact abs_pos_of_pos (lt_of_lt_of_le zero_lt_one (h x hx))
+      . positivity
+    calc ‖u b * v b - u a * v a‖
+      ≤ ‖u b * v b‖ + ‖u a * v a‖ := norm_sub_le _ _
+      _ ≤ L⁻¹ + L⁻¹ := by 
+        gcongr <;> apply this <;> simp
+      _ = 2 * L⁻¹ := by ring
 
   have h3 : ‖∫ x in a..b, u' x * v x‖ ≤ L⁻¹ := by
     have hφ' : ∀ x ∈ [[a, b]], ‖deriv (fun x ↦ 1 / φ' x) x‖ = deriv (fun x ↦ -1 / φ' x) x := by
