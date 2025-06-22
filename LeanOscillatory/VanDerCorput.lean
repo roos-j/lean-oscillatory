@@ -148,7 +148,14 @@ theorem abs_integral_exp_mul_I_le_of_order_one'
       _ = 2 * L⁻¹ := by ring
 
   have h3 : ‖∫ x in a..b, u' x * v x‖ ≤ L⁻¹ := by
-    have hφ' : ∀ x ∈ [[a, b]], ‖deriv (fun x ↦ 1 / φ' x) x‖ = deriv (fun x ↦ -1 / φ' x) x := by
+    -- have hφ' : ∀ x ∈ [[a, b]], ‖deriv (fun x ↦ 1 / φ' x) x‖ = deriv (fun x ↦ -1 / φ' x) x := by sorry
+    have bound1 : ‖u b * v b - u a * v a‖ ≤ 2 * L⁻¹ := by exact h2
+    have bound2 : ‖∫ x in a..b, u x * v' x‖ ≤ L⁻¹ := by
+      have h_integrand : ∀ x ∈ [[a, b]], u x * v' x = v x := by
+        intro x hx
+        simp only [u, v, v']
+        have φ'_pos : 0 < φ' x := lt_of_lt_of_le zero_lt_one (h x hx)
+        field_simp [hL.ne', φ'_pos.ne']
       sorry
     sorry
   calc
