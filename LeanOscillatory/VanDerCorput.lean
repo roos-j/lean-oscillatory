@@ -30,41 +30,35 @@ open intervalIntegral Interval
 
 open Preliminaries
 
+/-- If `f` is continuous on `[a, b]` and `|f x| ≥ 1` for all `x ∈ [a, b]`,
+  then either `f x ≥ 1` for all `x ∈ [a, b]` or `f x ≤ -1` for all `x ∈ [a, b]`. -/
+lemma _root_.ContinuousOn.forall_le_or_forall_le_of_forall_le_abs {a b : ℝ} {f : ℝ → ℝ}
+    (hfcont : ContinuousOn f [[a, b]]) (hf : ∀ x ∈ [[a, b]], 1 ≤ |f x|) :
+    (∀ x ∈ [[a, b]], 1 ≤ f x) ∨ (∀ x ∈ [[a, b]], f x ≤ -1) := by
+  by_contra! h
+  obtain ⟨⟨x₀, hx₀, hx₀'⟩, ⟨x₁, hx₁, hx₁'⟩⟩ := h
+  replace hx₀' : f x₀ ≤ -1 := by sorry -- use `hx₀` and `hf x₀`
+  replace hx₁' : f x₁ ≥ 1 := by sorry
+  have h1 : f x₀ ≤ f x₁ := by linarith
+  have h2 : [[x₀, x₁]] ⊆ [[a, b]] := uIcc_subset_uIcc hx₀ hx₁
+  have : 0 ∈ [[f x₀, f x₁]] := by sorry -- start with `constructor`
+  obtain ⟨x, hx, hfx⟩ := intermediate_value_uIcc (hfcont.mono h2) this
+  specialize hf x (h2 hx)
+  rw [hfx] at hf
+  norm_num at hf
+
+abbrev VanDerCorput.c (k : ℕ) : ℝ := 5 * 2 ^ (k - 1) - 2
+
+open VanDerCorput
+
+#check deriv_smul
+
 variable {a b : ℝ} {L : ℝ}
 variable {φ : ℝ → ℝ}
 
 section SpecialCase
 
-abbrev c (k : ℕ) : ℝ := 5 * 2 ^ (k - 1) - 2
-
-#check c
-
--- Auxiliary lemma: adapt appropriately
-example {f : ℝ → ℝ} (hf : Continuous f) (hf2 : ∀ x, 1 ≤ |f x|) : (∀ x, 1 ≤ f x) ∨ (∀ x, f x ≤ -1) := by
-  by_contra! h
-  obtain ⟨⟨x₀, hx₀⟩, ⟨x₁, hx₁⟩⟩ := h
-  replace hx₀ : f x₀ ≤ -1 := by sorry
-  replace hx₁ : f x₁ ≥ 1 := by sorry
-  have h1 : f x₀ ≤ f x₁ := by linarith
-  have : 0 ∈ [[f x₀, f x₁]] := by sorry
-  obtain ⟨x, _, hx⟩ := intermediate_value_uIcc (Continuous.continuousOn hf) this
-  specialize hf2 x
-  rw [hx] at hf2
-  norm_num at hf2
-
-
-#check intermediate_value_Ioo
-
-#check deriv_smul
-#check integral_mul_deriv_eq_deriv_mul
-#check integral_congr
-
-#check mul_div_cancel₀
-
-#check HasDerivWithinAt.ofReal_comp
-#check HasDerivAt.ofReal_comp
-
-/-- **Van der Corput's lemma**. Special case of `abs_integral_exp_mul_I_le_of_order_one`
+/-- **Van der Corput's lemma**. Special case of `norm_integral_exp_mul_I_le_of_order_one`
   where the amplitude function is constant and scalar.  -/
 theorem abs_integral_exp_mul_I_le_of_order_one'
     (hφ : ContDiffOn ℝ 2 φ [[a, b]]) (h : ∀ x ∈ [[a, b]], 1 ≤ |derivWithin φ [[a, b]] x|)
