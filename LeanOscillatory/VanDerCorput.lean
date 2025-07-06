@@ -62,7 +62,7 @@ section SpecialCase
   where the amplitude function is constant and scalar.  -/
 theorem norm_integral_exp_mul_I_le_of_order_one'
     (hφ : ContDiffOn ℝ 2 φ [[a, b]]) (h : ∀ x ∈ [[a, b]], 1 ≤ |derivWithin φ [[a, b]] x|)
-    (hφ'_mono : MonotoneOn (derivWithin φ [[a, b]]) [[a, b]]) (hL : 0 < L) : ‖∫ x in a..b, exp (L * φ x * I)‖ ≤ c 1 * L⁻¹ := by
+    (hφ'_mono : MonotoneOn (derivWithin φ [[a, b]]) [[a, b]]) (hL : L ≠ 0) : ‖∫ x in a..b, exp (L * φ x * I)‖ ≤ c 1 * |L|⁻¹ := by
   have := hφ.continuousOn
   letI φ' := fun x ↦ derivWithin φ [[a, b]] x
   have hasDerivAt_φ : ∀ x ∈ [[a, b]], HasDerivWithinAt φ (φ' x) [[a, b]] x := fun x hx ↦
@@ -89,18 +89,9 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
   letI u' := fun x ↦ (φ'' x) * I / (L * (φ' x) ^ 2)
   letI v' := fun x ↦ L * φ' x * I * exp (L * φ x * I)
 
-  have hφ'_nz {x : ℝ} (hx : x ∈ [[a, b]]) : φ' x ≠ 0 := by
-    rcases h' with h' | h'
-      <;> linarith only [h' x hx]
-
-  have hnz1 {x : ℝ} (hx : x ∈ [[a, b]]) : L * φ' x * I ≠ 0 := by
-    apply Complex.ne_zero_of_im_ne_zero
-    simp [(ne_of_lt hL).symm, hφ'_nz hx]
-
-  have hnz2 {x : ℝ} (hx : x ∈ [[a, b]]) : (L : ℂ) * (φ' x) ^ 2 ≠ 0 := by
-    norm_cast
-    have := hφ'_nz hx
-    positivity
+  have hφ'_nz {x : ℝ} (hx : x ∈ [[a, b]]) : φ' x ≠ 0 := by rcases h' with h' | h' <;> linarith only [h' x hx]
+  have hnz1 {x : ℝ} (hx : x ∈ [[a, b]]) : L * φ' x * I ≠ 0 := by simp [hL, hφ'_nz hx]
+  have hnz2 {x : ℝ} (hx : x ∈ [[a, b]]) : (L : ℂ) * (φ' x) ^ 2 ≠ 0 := by simp [hL, hφ'_nz hx]
 
   have hasDerivAt_u : ∀ x ∈ [[a, b]], HasDerivWithinAt u (u' x) [[a, b]] x := by
     intro x hx
@@ -129,11 +120,11 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
     simp only [u, v']
     field_simp [hnz1 hx]
 
-  have h2 {x : ℝ} (hx : x ∈ [[a, b]]) : ‖u x * v x‖ ≤ L⁻¹ := by
+  have h2 {x : ℝ} (hx : x ∈ [[a, b]]) : ‖u x * v x‖ ≤ |L|⁻¹ := by
     simp only [u, v, norm_mul, norm_div, norm_one]
     norm_cast
     rw [norm_exp_ofReal_mul_I]
-    have : 0 < L * |φ' x| := by have := h x hx; positivity
+    have : 0 < |L| * |φ' x| := by have := h x hx; positivity
     refine le_of_mul_le_mul_left ?_ this
     field_simp [abs_of_pos, φ', h x hx]
 
@@ -145,26 +136,23 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
     · simp
     · exact hφ'_nz hx'
 
-  have hnorm_u'_eq : ∀ x ∈ [[a, b]], ‖u' x‖ = φ'' x / (φ' x) ^ 2 * L⁻¹ := by
+  have hnorm_u'_eq : ∀ x ∈ [[a, b]], ‖u' x‖ = φ'' x / (φ' x) ^ 2 * |L|⁻¹ := by
     intro x hx
-    simp only [Complex.norm_div, Complex.norm_mul, norm_real, Real.norm_eq_abs, norm_I, mul_one,
-      abs_eq_self.mpr (le_of_lt hL), norm_pow, sq_abs, u']
-    rw [abs_of_nonneg <| hφ'_mono.derivWithin_nonneg (x := x), mul_comm L]
+    simp only [Complex.norm_div, Complex.norm_mul, norm_real, Real.norm_eq_abs, norm_I, mul_one, norm_pow, sq_abs, u']
+    rw [abs_of_nonneg <| hφ'_mono.derivWithin_nonneg (x := x), mul_comm |L|]
     have : φ' x ^ 2 * L ≠ 0 := by haveI := hφ'_nz hx; positivity
     field_simp
     rfl
 
-  have hv {x : ℝ} : ‖v x‖ = 1 := by
-    simp only [v]
-    exact_mod_cast norm_exp_ofReal_mul_I _
+  have hv {x : ℝ} : ‖v x‖ = 1 := by simp only [v]; exact_mod_cast norm_exp_ofReal_mul_I _
 
-  have h3 : ‖∫ x in a..b, u' x * v x‖ ≤ L⁻¹ := by
+  have h3 : ‖∫ x in a..b, u' x * v x‖ ≤ |L|⁻¹ := by
     apply le_trans norm_integral_le_abs_integral_norm
     simp_rw [norm_mul, hv, mul_one]
     rw [integral_congr hnorm_u'_eq, integral_mul_const]
     rw [integral_eq_sub_of_hasDeriv_right ?_ hasDerivAt_φ'_int]
-    · rw [abs_mul, abs_of_pos (show 0 < L⁻¹ by positivity)]
-      refine le_of_mul_le_mul_right ?_ hL
+    · rw [abs_mul, abs_of_pos (show 0 < |L|⁻¹ by positivity)]
+      refine le_of_mul_le_mul_right ?_ (show 0 < |L| by positivity)
       rw [mul_assoc, inv_mul_cancel₀ (by positivity), mul_one, neg_div, neg_div, sub_neg_eq_add]
       rcases h' with h' | h'
       · have ha1 := div_nonneg zero_le_one <| le_trans zero_le_one <| h' _ left_mem_uIcc
@@ -196,7 +184,7 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
       rw [h1, sub_eq_neg_add]
       nth_rewrite 2 [← norm_neg]
       exact norm_add_le _ _
-    _ ≤ L⁻¹ + 2 * L⁻¹ := by
+    _ ≤ |L|⁻¹ + 2 * |L|⁻¹ := by
       gcongr
       apply le_trans (norm_sub_le _ _) (by linarith only [h2 left_mem_uIcc, h2 right_mem_uIcc])
     _ = _ := by ring
@@ -220,7 +208,7 @@ variable  {ψ : ℝ → E}
 /-- **Van der Corput's lemma** for vector-valued amplitude functions, first order case.
 For second and higher order see `norm_integral_exp_mul_I_le_of_order_ge_two`. -/
 theorem norm_integral_exp_mul_I_le_of_order_one
-    (hφ : ContDiffOn ℝ 1 φ ([[a, b]])) (hψ : ContDiffOn ℝ 1 ψ ([[a, b]]))
+    (hφ : ContDiffOn ℝ 2 φ ([[a, b]])) (hψ : ContDiffOn ℝ 1 ψ ([[a, b]]))
     (h : ∀ x ∈ [[a, b]], 1 ≤ |derivWithin φ [[a, b]] x|) (h' : Monotone φ) (hL : L ≠ 0) :
     ‖∫ x in a..b, exp (L * φ x * I) • ψ x‖ ≤ c 1 * |L|⁻¹ * (‖ψ b‖ + ∫ x in a..b, ‖derivWithin ψ [[a, b]] x‖) := by
   letI F := fun x ↦ ∫ t in a..x, exp (L * φ x * I)
@@ -237,7 +225,7 @@ theorem norm_integral_exp_mul_I_le_of_order_one
 /-- **Van der Corput's lemma** for vector-valued amplitude functions, case `k ≥ 2`.
 For `k = 1` see `norm_integral_exp_mul_I_le_of_order_one`. -/
 theorem norm_integral_exp_mul_I_le_of_order_ge_two (k : ℕ) (hk : 2 ≤ k)
-    (hφ : ContDiffOn ℝ 1 φ ([[a, b]])) (hψ : ContDiffOn ℝ k ψ ([[a, b]]))
+    (hφ : ContDiffOn ℝ k φ ([[a, b]])) (hψ : ContDiffOn ℝ 1 ψ ([[a, b]]))
     (h : ∀ x ∈ [[a, b]], 1 ≤ |iteratedDeriv k φ x|) (hL : L ≠ 0) :
     ‖∫ x in a..b, exp (L * φ x * I) • ψ x‖ ≤ c k * |L| ^ ((-1 : ℝ) / k) * (‖ψ b‖ + ∫ x in a..b, ‖deriv ψ x‖) := by
   sorry

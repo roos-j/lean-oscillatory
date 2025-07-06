@@ -1,14 +1,14 @@
 import LeanOscillatory.Basic
 
-namespace Complex
+-- namespace Complex
 
--- lemma ne_zero_of_im_pos {s : ℂ} (hs : 0 < s.im) : s ≠ 0 :=
---   fun h ↦ (zero_im ▸ h ▸ hs).false
+-- -- lemma ne_zero_of_im_pos {s : ℂ} (hs : 0 < s.im) : s ≠ 0 :=
+-- --   fun h ↦ (zero_im ▸ h ▸ hs).false
 
-lemma ne_zero_of_im_ne_zero {s : ℂ} (hs : s.im ≠ 0) : s ≠ 0 :=
-  fun h ↦ zero_im ▸ h ▸ hs <| by rfl
+-- lemma ne_zero_of_im_ne_zero {s : ℂ} (hs : s.im ≠ 0) : s ≠ 0 :=
+--   fun h ↦ zero_im ▸ h ▸ hs <| by rfl
 
-end Complex
+-- end Complex
 
 section ContDiffOn
 
