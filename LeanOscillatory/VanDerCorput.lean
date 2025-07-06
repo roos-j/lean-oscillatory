@@ -214,15 +214,24 @@ end SpecialCase
 
 section GeneralCase
 
-variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E]
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [CompleteSpace E]
 variable  {ψ : ℝ → E}
 
 /-- **Van der Corput's lemma** for vector-valued amplitude functions, first order case.
 For second and higher order see `norm_integral_exp_mul_I_le_of_order_ge_two`. -/
 theorem norm_integral_exp_mul_I_le_of_order_one
     (hφ : ContDiffOn ℝ 1 φ ([[a, b]])) (hψ : ContDiffOn ℝ 1 ψ ([[a, b]]))
-    (h : ∀ x ∈ [[a, b]], 1 ≤ |deriv φ x|) (h' : Monotone φ) (hL : L ≠ 0) :
-  ‖∫ x in a..b, exp (L * φ x * I) • ψ x‖ ≤ c 1 * |L|⁻¹ * (‖ψ b‖ + ∫ x in a..b, ‖deriv ψ x‖) := by
+    (h : ∀ x ∈ [[a, b]], 1 ≤ |derivWithin φ [[a, b]] x|) (h' : Monotone φ) (hL : L ≠ 0) :
+    ‖∫ x in a..b, exp (L * φ x * I) • ψ x‖ ≤ c 1 * |L|⁻¹ * (‖ψ b‖ + ∫ x in a..b, ‖derivWithin ψ [[a, b]] x‖) := by
+  letI F := fun x ↦ ∫ t in a..x, exp (L * φ x * I)
+  letI F' := fun x ↦ derivWithin F [[a, b]] x
+  letI ψ' := fun x ↦ derivWithin ψ [[a, b]] x
+  have h1 : ∫ x in a..b, F x • ψ' x = F b • ψ b - F a • ψ a - ∫ x in a..b, F' x • ψ x := by
+    apply integral_smul_deriv_eq_deriv_smul_of_hasDerivWithinAt
+    · sorry
+    · sorry
+    · sorry
+    · sorry
   sorry
 
 /-- **Van der Corput's lemma** for vector-valued amplitude functions, case `k ≥ 2`.
@@ -230,7 +239,7 @@ For `k = 1` see `norm_integral_exp_mul_I_le_of_order_one`. -/
 theorem norm_integral_exp_mul_I_le_of_order_ge_two (k : ℕ) (hk : 2 ≤ k)
     (hφ : ContDiffOn ℝ 1 φ ([[a, b]])) (hψ : ContDiffOn ℝ k ψ ([[a, b]]))
     (h : ∀ x ∈ [[a, b]], 1 ≤ |iteratedDeriv k φ x|) (hL : L ≠ 0) :
-  ‖∫ x in a..b, exp (L * φ x * I) • ψ x‖ ≤ c k * |L| ^ ((-1 : ℝ) / k) * (‖ψ b‖ + ∫ x in a..b, ‖deriv ψ x‖) := by
+    ‖∫ x in a..b, exp (L * φ x * I) • ψ x‖ ≤ c k * |L| ^ ((-1 : ℝ) / k) * (‖ψ b‖ + ∫ x in a..b, ‖deriv ψ x‖) := by
   sorry
 
 end GeneralCase
