@@ -2,8 +2,11 @@ import LeanOscillatory.Basic
 
 namespace Complex
 
-lemma ne_zero_of_im_pos {s : ℂ} (hs : 0 < s.im) : s ≠ 0 :=
-  fun h ↦ (zero_im ▸ h ▸ hs).false
+-- lemma ne_zero_of_im_pos {s : ℂ} (hs : 0 < s.im) : s ≠ 0 :=
+--   fun h ↦ (zero_im ▸ h ▸ hs).false
+
+lemma ne_zero_of_im_ne_zero {s : ℂ} (hs : s.im ≠ 0) : s ≠ 0 :=
+  fun h ↦ zero_im ▸ h ▸ hs <| by rfl
 
 end Complex
 
@@ -82,3 +85,19 @@ theorem HasDerivWithinAt.ofReal_comp {f : ℝ → ℝ} {u : ℝ} (hf : HasDerivW
     ofRealCLM.hasDerivWithinAt.scomp z hf <| fun _ _ ↦ Set.mem_univ _
 
 end Analysis.Complex.RealDeriv
+
+-- section Mathlib.Data.Real.Sign
+
+-- namespace Real
+
+-- theorem abs_sign_le {r : ℝ} : |r.sign| ≤ 1 := by
+--   rcases sign_apply_eq r with h|h|h
+--     <;> { rw [h]; simp }
+
+-- theorem abs_sign_eq {r : ℝ} (hr : r ≠ 0) : |r.sign| = 1 := by
+--   rcases sign_apply_eq_of_ne_zero r hr with h|h
+--     <;> { rw [h]; simp }
+
+-- end Real
+
+-- end Mathlib.Data.Real.Sign

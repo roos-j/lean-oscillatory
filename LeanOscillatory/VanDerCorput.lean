@@ -67,15 +67,9 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
   letI φ' := fun x ↦ derivWithin φ [[a, b]] x
   have hasDerivAt_φ : ∀ x ∈ [[a, b]], HasDerivWithinAt φ (φ' x) [[a, b]] x := fun x hx ↦
     DifferentiableWithinAt.hasDerivWithinAt <| (hφ.contDiffWithinAt hx).differentiableWithinAt (by norm_num)
-  have : ContinuousOn φ' [[a, b]] := hφ.continuousOn_derivWithin_uIcc (by norm_num)
+  have hφ'cont : ContinuousOn φ' [[a, b]] := hφ.continuousOn_derivWithin_uIcc (by norm_num)
 
-  -- wlog hab : a ≤ b; focus {
-  --   sorry
-  -- }
-
-  wlog h' : ∀ x ∈ [[a, b]], 1 ≤ φ' x; focus {
-    sorry
-  }
+  obtain h' := hφ'cont.forall_le_or_forall_le_of_forall_le_abs h
 
   letI φ'' := fun x ↦ derivWithin φ' [[a, b]] x
   have hasDerivAt_φ' : ∀ x ∈ [[a, b]], HasDerivWithinAt φ' (φ'' x) [[a, b]] x := fun x hx ↦
@@ -95,19 +89,25 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
   letI u' := fun x ↦ (φ'' x) * I / (L * (φ' x) ^ 2)
   letI v' := fun x ↦ L * φ' x * I * exp (L * φ x * I)
 
-  have hnz : ∀ x ∈ [[a, b]], L * φ' x * I ≠ 0 := by
-      intro x hx
-      have := h' x hx
-      apply Complex.ne_zero_of_im_pos
-      simp
-      positivity
+  have hφ'_nz {x : ℝ} (hx : x ∈ [[a, b]]) : φ' x ≠ 0 := by
+    rcases h' with h' | h'
+      <;> linarith only [h' x hx]
+
+  have hnz1 {x : ℝ} (hx : x ∈ [[a, b]]) : L * φ' x * I ≠ 0 := by
+    apply Complex.ne_zero_of_im_ne_zero
+    simp [(ne_of_lt hL).symm, hφ'_nz hx]
+
+  have hnz2 {x : ℝ} (hx : x ∈ [[a, b]]) : (L : ℂ) * (φ' x) ^ 2 ≠ 0 := by
+    norm_cast
+    have := hφ'_nz hx
+    positivity
 
   have hasDerivAt_u : ∀ x ∈ [[a, b]], HasDerivWithinAt u (u' x) [[a, b]] x := by
     intro x hx
-    have := h' x hx
-    convert HasDerivWithinAt.div (hasDerivWithinAt_const _ _ _) (.mul (.mul (hasDerivWithinAt_const _ _ _) (.ofReal_comp <| hasDerivAt_φ' _ hx)) (hasDerivWithinAt_const _ _ _)) (hnz x hx) using 1
+    convert HasDerivWithinAt.div (hasDerivWithinAt_const _ _ _) (.mul (.mul (hasDerivWithinAt_const _ _ _) (.ofReal_comp <| hasDerivAt_φ' _ hx)) (hasDerivWithinAt_const _ _ _)) (hnz1 hx) using 1
     simp [mul_pow, u']
-    have : ofReal L * (φ' x) ^ 2 ≠ 0 := by norm_cast; positivity
+    have := hφ'_nz hx
+    have := hnz2 hx
     have : ofReal L ^ 2 * (φ' x) ^ 2 ≠ 0 := by norm_cast; positivity
     field_simp
     ring
@@ -123,19 +123,17 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
     suffices h'' : ∀ x ∈ [[a, b]], exp (L * φ x * I) = u x * v' x by
       rw [integral_congr h'']
       refine integral_mul_deriv_eq_deriv_mul_of_hasDerivWithinAt hasDerivAt_u hasDerivAt_v ?_ ?_
-      · have : ∀ x ∈ [[a, b]], (L : ℂ) * (φ' x) ^ 2 ≠ 0 :=
-          fun x hx ↦ by haveI := h' x hx; norm_cast; positivity
-        exact ContinuousOn.intervalIntegrable (by fun_prop (discharger := assumption))
+      · exact ContinuousOn.intervalIntegrable (by fun_prop (discharger := assumption))
       · exact ContinuousOn.intervalIntegrable (by fun_prop (discharger := assumption))
     intro x hx
-    simp only [u, v, v']
-    field_simp [hnz _ hx]
+    simp only [u, v']
+    field_simp [hnz1 hx]
 
   have h2 {x : ℝ} (hx : x ∈ [[a, b]]) : ‖u x * v x‖ ≤ L⁻¹ := by
     simp only [u, v, norm_mul, norm_div, norm_one]
     norm_cast
     rw [norm_exp_ofReal_mul_I]
-    have : 0 < L * |φ' x| := by have := h' x hx; positivity
+    have : 0 < L * |φ' x| := by have := h x hx; positivity
     refine le_of_mul_le_mul_left ?_ this
     --clear hab;
     field_simp [abs_of_pos, φ', h x hx]
@@ -144,7 +142,13 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
     sorry
 
   have hnorm_u'_eq : ∀ x ∈ [[a, b]], ‖u' x‖ = φ'' x / (φ' x) ^ 2 * L⁻¹ := by
-    sorry
+    intro x hx
+    simp only [Complex.norm_div, Complex.norm_mul, norm_real, Real.norm_eq_abs, norm_I, mul_one,
+      abs_eq_self.mpr (le_of_lt hL), norm_pow, sq_abs, u']
+    rw [abs_of_nonneg <| hφ'_mono.derivWithin_nonneg (x := x), mul_comm L]
+    have : φ' x ^ 2 * L ≠ 0 := by haveI := hφ'_nz hx; positivity
+    field_simp
+    rfl
 
   have hv {x : ℝ} : ‖v x‖ = 1 := by
     simp only [v]
@@ -160,8 +164,8 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
       rw [mul_assoc, inv_mul_cancel₀ (by positivity), mul_one, neg_div, neg_div, sub_neg_eq_add]
       sorry
     · apply ContinuousOn.intervalIntegrable
-      fun_prop (discharger := exact fun x hx ↦ by have := h' x hx; positivity)
-    · fun_prop (discharger := exact fun x hx ↦ by have := h' x hx; positivity)
+      fun_prop (discharger := exact fun x hx ↦ by haveI := hφ'_nz hx; positivity)
+    · fun_prop (discharger := exact fun x hx ↦ by haveI := hφ'_nz hx; positivity)
 
   calc
     _ ≤ ‖∫ x in a..b, u' x * v x‖ + ‖u b * v b - u a * v a‖ := by
