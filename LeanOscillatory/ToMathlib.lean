@@ -101,3 +101,18 @@ end Analysis.Complex.RealDeriv
 -- end Real
 
 -- end Mathlib.Data.Real.Sign
+
+section Mathlib.Topology.Order.OrderClosed
+
+variable {α : Type*}
+variable [TopologicalSpace α] [LinearOrder α] [OrderClosedTopology α]
+
+open Set
+
+theorem uIoo_mem_nhds {a b x : α} (hx : x ∈ uIoo a b) : uIoo a b ∈ nhds x := by
+  rcases lt_trichotomy a b with h | h | h
+  · exact uIoo_of_lt h ▸ Ioo_mem_nhds (uIoo_of_lt h ▸ hx).1 (uIoo_of_lt h ▸ hx).2
+  · exact False.elim <| notMem_empty x (uIoo_self (a := b) ▸ h ▸ hx)
+  · exact uIoo_of_gt h ▸ Ioo_mem_nhds (uIoo_of_gt h ▸ hx).1 (uIoo_of_gt h ▸ hx).2
+
+end Mathlib.Topology.Order.OrderClosed

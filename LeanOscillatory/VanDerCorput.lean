@@ -135,11 +135,15 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
     rw [norm_exp_ofReal_mul_I]
     have : 0 < L * |φ' x| := by have := h x hx; positivity
     refine le_of_mul_le_mul_left ?_ this
-    --clear hab;
     field_simp [abs_of_pos, φ', h x hx]
 
   have hasDerivAt_φ'_int : ∀ x ∈ uIoo a b, HasDerivWithinAt (fun x ↦ -1 / φ' x) (φ'' x / (φ' x) ^ 2) (Ioi x) x := by
-    sorry
+    intro x hx
+    have hx' := uIoo_subset_uIcc _ _ hx
+    have := ((hasDerivAt_φ' x hx').mono (uIoo_subset_uIcc _ _)).hasDerivAt <| uIoo_mem_nhds hx
+    convert HasDerivWithinAt.div (hasDerivWithinAt_const _ _ _) this.hasDerivWithinAt ?_ using 1
+    · simp
+    · exact hφ'_nz hx'
 
   have hnorm_u'_eq : ∀ x ∈ [[a, b]], ‖u' x‖ = φ'' x / (φ' x) ^ 2 * L⁻¹ := by
     intro x hx
@@ -162,7 +166,27 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
     · rw [abs_mul, abs_of_pos (show 0 < L⁻¹ by positivity)]
       refine le_of_mul_le_mul_right ?_ hL
       rw [mul_assoc, inv_mul_cancel₀ (by positivity), mul_one, neg_div, neg_div, sub_neg_eq_add]
-      sorry
+      rcases h' with h' | h'
+      · have ha1 := div_nonneg zero_le_one <| le_trans zero_le_one <| h' _ left_mem_uIcc
+        have hb1 := div_nonneg zero_le_one <| le_trans zero_le_one <| h' _ right_mem_uIcc
+        have := one_div_le (lt_of_lt_of_le zero_lt_one <| h' _ left_mem_uIcc) zero_lt_one |>.mpr
+        have ha2 := div_self (G₀ := ℝ) one_ne_zero ▸ this <| h' _ left_mem_uIcc
+        have := one_div_le (lt_of_lt_of_le zero_lt_one <| h' _ right_mem_uIcc) zero_lt_one |>.mpr
+        have hb2 := div_self (G₀ := ℝ) one_ne_zero ▸ this <| h' _ right_mem_uIcc
+        rcases le_or_gt 0 (-(1 / φ' b) + 1 / φ' a) with hab | hab
+        · rw [abs_of_nonneg hab]; linarith only [ha2, hb1]
+        · rw [abs_of_neg hab]; linarith only [ha1, hb2]
+      · have ha1 := div_nonpos_iff.mpr (Or.inl ⟨zero_le_one, le_trans (h' _ left_mem_uIcc) (le_of_lt neg_one_lt_zero)⟩)
+        have hb1 := div_nonpos_iff.mpr (Or.inl ⟨zero_le_one, le_trans (h' _ right_mem_uIcc) (le_of_lt neg_one_lt_zero)⟩)
+        have ha2 : -(1 / φ' a) ≤ 1 := by
+          simpa only [← neg_div] using div_le_one_of_ge (h' _ left_mem_uIcc)
+            <| le_trans (h' _ left_mem_uIcc) <| le_of_lt neg_one_lt_zero
+        have hb2 : -(1 / φ' b) ≤ 1 := by
+          simpa only [← neg_div] using div_le_one_of_ge (h' _ right_mem_uIcc)
+            <| le_trans (h' _ right_mem_uIcc) <| le_of_lt neg_one_lt_zero
+        rcases le_or_gt 0 (-(1 / φ' b) + 1 / φ' a) with hab | hab
+        · rw [abs_of_nonneg hab]; linarith only [ha1, hb2]
+        · rw [abs_of_neg hab]; linarith only [ha2, hb1]
     · apply ContinuousOn.intervalIntegrable
       fun_prop (discharger := exact fun x hx ↦ by haveI := hφ'_nz hx; positivity)
     · fun_prop (discharger := exact fun x hx ↦ by haveI := hφ'_nz hx; positivity)
@@ -176,7 +200,6 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
       gcongr
       apply le_trans (norm_sub_le _ _) (by linarith only [h2 left_mem_uIcc, h2 right_mem_uIcc])
     _ = _ := by ring
-
 
 
 /-- **Van der Corput's lemma**. Special case of `norm_integral_exp_mul_I_le_of_order_ge_two`
