@@ -12,13 +12,25 @@ import LeanOscillatory.Basic
 
 section ContDiffOn
 
-/- Todo: generalize to ordered field -/
-
 variable {a b : ℝ}
 variable {n : WithTop ℕ∞}
-variable {f : ℝ → ℝ}
+
+variable {F : Type*} [NormedAddCommGroup F] [NormedSpace ℝ F]
+variable {f : ℝ → F}
 
 open Real Interval
+
+-- section Mathlib.Analysis.Calculus.Deriv.Basic
+
+-- theorem HasDerivWithinAt.derivWithin_uIcc {f' : F} {x : ℝ} (hx : x ∈ [[a, b]])
+--     (h : HasDerivWithinAt f f' [[a, b]] x) (hab : b ≠ a) : _root_.derivWithin f [[a, b]] x = f' := by
+--   apply h.derivWithin
+--   apply uniqueDiffOn_Icc (by simpa)
+--   exact hx
+
+-- end Mathlib.Analysis.Calculus.Deriv.Basic
+
+section Mathlib.Analysis.Calculus.ContDiff.Basic
 
 theorem ContDiffOn.continuousOn_derivWithin_uIcc (h : ContDiffOn ℝ n f [[a, b]])
     (hn : 1 ≤ n) : ContinuousOn (derivWithin f [[a, b]]) [[a, b]] := by
@@ -26,7 +38,9 @@ theorem ContDiffOn.continuousOn_derivWithin_uIcc (h : ContDiffOn ℝ n f [[a, b]
   · simp [hab]
   · exact h.continuousOn_derivWithin (uniqueDiffOn_Icc (by simp [hab])) hn
 
-section Analysis.Calculus.IteratedDeriv
+end Mathlib.Analysis.Calculus.ContDiff.Basic
+
+section Mathlib.Analysis.Calculus.IteratedDeriv
 
 theorem ContDiffOn.continuousOn_iteratedDerivWithin_uIcc
     {m : ℕ} (h : ContDiffOn ℝ n f [[a, b]])
@@ -53,7 +67,7 @@ theorem ContDiffWithinAt.differentiableWithinAt_derivWithin_uIcc
   ext
   exact iteratedDerivWithin_one.symm
 
-end Analysis.Calculus.IteratedDeriv
+end Mathlib.Analysis.Calculus.IteratedDeriv
 
 end ContDiffOn
 
