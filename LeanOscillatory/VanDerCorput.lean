@@ -217,23 +217,38 @@ theorem norm_integral_exp_mul_I_le_of_order_one
 
   have hasDeriv_ψ : ∀ x ∈ [[a, b]], HasDerivWithinAt ψ (ψ' x) [[a, b]] x := fun x hx ↦ (hψ.contDiffWithinAt hx).differentiableWithinAt (by norm_num) |>.hasDerivWithinAt
 
-  have hasDeriv_φ {x : ℝ} (hx : x ∈ [[a, b]]) := (hψ.contDiffWithinAt hx).differentiableWithinAt (by norm_num) |>.hasDerivWithinAt
+  have hasDeriv_φ {x : ℝ} (hx : x ∈ [[a, b]]) := (hφ.contDiffWithinAt hx).differentiableWithinAt (by norm_num) |>.hasDerivWithinAt
+
+  have cont_F' : ContinuousOn F' [[a, b]] := by fun_prop
 
   have hasDeriv_F : ∀ x ∈ [[a, b]], HasDerivWithinAt F (F' x) [[a, b]] x := by
-    sorry
+    intro x hx
+    have := FTCFilter.nhdsUIcc (h := ⟨hx⟩)
+    apply integral_hasDerivWithinAt_right (t := [[a, b]])
+    · exact ContinuousOn.intervalIntegrable <| ContinuousOn.mono cont_F' <| uIcc_subset_uIcc_left hx
+    · apply ContinuousOn.stronglyMeasurableAtFilter_nhdsWithin cont_F' measurableSet_uIcc
+    · exact ContinuousOn.continuousWithinAt cont_F' hx
 
   have h1 : ∫ x in a..b, F x • ψ' x = F b • ψ b - F a • ψ a - ∫ x in a..b, F' x • ψ x := by
     apply integral_smul_deriv_eq_deriv_smul_of_hasDerivWithinAt hasDeriv_F hasDeriv_ψ
       <;> { apply ContinuousOn.intervalIntegrable; fun_prop }
 
   have norm_F_le {x : ℝ} (hx : x ∈ [[a, b]]) : ‖F x‖ ≤ c 1 * |L|⁻¹ := by
+    wlog hxa : x ≠ a; focus {
+      simp [Decidable.not_not.mp hxa, F]
+      positivity
+    }
     have hsubset := uIcc_subset_uIcc_left hx
+    have haux : ∀ y ∈ [[a, x]], derivWithin φ [[a, x]] y = derivWithin φ [[a, b]] y := by
+      intro y hy
+      have : UniqueDiffWithinAt ℝ [[a, x]] y := by
+        apply uniqueDiffOn_Icc (by simp [hxa])
+        exact hy
+      exact hasDeriv_φ (hsubset hy) |>.mono hsubset |>.derivWithin this
     refine norm_integral_exp_mul_I_le_of_order_one' ?_ ?_ ?_ hL
     · exact hφ.mono hsubset
-    · intro y hy
-      have := hasDeriv_φ (hsubset hy) |>.mono hsubset |>.derivWithin
-      sorry
-    · sorry
+    · exact fun y hy ↦ haux y hy ▸ h y (hsubset hy)
+    · exact (hφ'_mono.mono hsubset).congr <| fun y hy ↦ (haux y hy).symm
 
   have heq : ∀ x ∈ [[a, b]], exp (L * φ x * I) • ψ x = F' x • ψ x := fun _ _ ↦ rfl
 
