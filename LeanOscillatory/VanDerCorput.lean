@@ -69,7 +69,7 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
     DifferentiableWithinAt.hasDerivWithinAt <| (hφ.contDiffWithinAt hx).differentiableWithinAt (by norm_num)
   have hφ'cont : ContinuousOn φ' [[a, b]] := hφ.continuousOn_derivWithin_uIcc (by norm_num)
 
-  obtain h' := hφ'cont.forall_le_or_forall_le_of_forall_le_abs h
+  have h' := hφ'cont.forall_le_or_forall_le_of_forall_le_abs h
 
   letI φ'' := fun x ↦ derivWithin φ' [[a, b]] x
   have hasDerivAt_φ' : ∀ x ∈ [[a, b]], HasDerivWithinAt φ' (φ'' x) [[a, b]] x := fun x hx ↦
@@ -80,8 +80,8 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
     ext
     rw [iteratedDerivWithin_two]
 
-  obtain ⟨x₀, _, hx₀'⟩ := isCompact_uIcc.exists_isMaxOn nonempty_uIcc <| ContinuousOn.abs hφ''_cont
-  have hC₀ := isMaxOn_iff.mp hx₀'
+  obtain ⟨x₀, _, hx₀⟩ := isCompact_uIcc.exists_isMaxOn nonempty_uIcc <| ContinuousOn.abs hφ''_cont
+  have hC₀ := isMaxOn_iff.mp hx₀
   set C₀ := |φ'' x₀|
 
   letI u := fun x ↦ 1 / (L * φ' x * I)
@@ -209,9 +209,9 @@ variable  {ψ : ℝ → E}
 For second and higher order see `norm_integral_exp_mul_I_le_of_order_ge_two`. -/
 theorem norm_integral_exp_mul_I_le_of_order_one
     (hφ : ContDiffOn ℝ 2 φ ([[a, b]])) (hψ : ContDiffOn ℝ 1 ψ ([[a, b]]))
-    (h : ∀ x ∈ [[a, b]], 1 ≤ |derivWithin φ [[a, b]] x|) (h' : Monotone φ) (hL : L ≠ 0) :
+    (h : ∀ x ∈ [[a, b]], 1 ≤ |derivWithin φ [[a, b]] x|) (hφ'_mono : MonotoneOn (derivWithin φ [[a, b]]) [[a, b]]) (hL : L ≠ 0) :
     ‖∫ x in a..b, exp (L * φ x * I) • ψ x‖ ≤ c 1 * |L|⁻¹ * (‖ψ b‖ + ∫ x in a..b, ‖derivWithin ψ [[a, b]] x‖) := by
-  letI F := fun x ↦ ∫ t in a..x, exp (L * φ x * I)
+  letI F := fun x ↦ ∫ t in a..x, exp (L * φ t * I)
   letI F' := fun x ↦ derivWithin F [[a, b]] x
   letI ψ' := fun x ↦ derivWithin ψ [[a, b]] x
   have h1 : ∫ x in a..b, F x • ψ' x = F b • ψ b - F a • ψ a - ∫ x in a..b, F' x • ψ x := by
@@ -220,7 +220,24 @@ theorem norm_integral_exp_mul_I_le_of_order_one
     · sorry
     · sorry
     · sorry
-  sorry
+
+  have h1' :  ∫ x in a..b, F' x • ψ x = F b • ψ b - F a • ψ a - ∫ x in a..b, F x • ψ' x := by
+    simp [h1]
+
+  have hasDeriv_F {x : ℝ} (hx : x ∈ [[a, b]]) : HasDerivWithinAt F (exp (L * φ x * I)) [[a, b]] x := by
+    sorry
+
+  have heq : ∀ x ∈ [[a, b]], exp (L * φ x * I) • ψ x = F' x • ψ x := by
+    sorry
+
+  have := norm_integral_exp_mul_I_le_of_order_one' hφ h hφ'_mono hL
+
+  calc
+    _ = ‖F b • ψ b - F a • ψ a - ∫ x in a..b, F x • ψ' x‖ := by congr; simpa [h1] using integral_congr heq
+    _ ≤ ‖F b‖ * ‖ψ b‖ + ∫ x in a..b, ‖F x‖ * ‖ψ' x‖ := by
+      rw [show F a = 0 from integral_same, zero_smul, sub_zero]
+      sorry
+    _ ≤ _ := by sorry
 
 /-- **Van der Corput's lemma** for vector-valued amplitude functions, case `k ≥ 2`.
 For `k = 1` see `norm_integral_exp_mul_I_le_of_order_one`. -/
