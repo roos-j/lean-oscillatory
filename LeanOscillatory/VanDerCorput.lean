@@ -210,7 +210,7 @@ For second and higher order see `norm_integral_exp_mul_I_le_of_order_ge_two`. -/
 theorem norm_integral_exp_mul_I_le_of_order_one
     (hφ : ContDiffOn ℝ 2 φ ([[a, b]])) (hψ : ContDiffOn ℝ 1 ψ ([[a, b]]))
     (h : ∀ x ∈ [[a, b]], 1 ≤ |derivWithin φ [[a, b]] x|) (hφ'_mono : MonotoneOn (derivWithin φ [[a, b]]) [[a, b]]) (hL : L ≠ 0) :
-    ‖∫ x in a..b, exp (L * φ x * I) • ψ x‖ ≤ c 1 * |L|⁻¹ * (‖ψ b‖ + ∫ x in a..b, ‖derivWithin ψ [[a, b]] x‖) := by
+    ‖∫ x in a..b, exp (L * φ x * I) • ψ x‖ ≤ c 1 * |L|⁻¹ * (‖ψ b‖ + |∫ x in a..b, ‖derivWithin ψ [[a, b]] x‖|) := by
   letI F := fun x ↦ ∫ t in a..x, exp (L * φ t * I)
   letI F' := fun x ↦ derivWithin F [[a, b]] x
   letI ψ' := fun x ↦ derivWithin ψ [[a, b]] x
@@ -234,10 +234,16 @@ theorem norm_integral_exp_mul_I_le_of_order_one
 
   calc
     _ = ‖F b • ψ b - F a • ψ a - ∫ x in a..b, F x • ψ' x‖ := by congr; simpa [h1] using integral_congr heq
-    _ ≤ ‖F b‖ * ‖ψ b‖ + ∫ x in a..b, ‖F x‖ * ‖ψ' x‖ := by
+    _ ≤ ‖F b‖ * ‖ψ b‖ + |∫ x in a..b, c 1 * |L|⁻¹ * ‖ψ' x‖| := by
       rw [show F a = 0 from integral_same, zero_smul, sub_zero]
-      sorry
-    _ ≤ _ := by sorry
+      apply le_trans <| norm_sub_le _ _
+      apply add_le_add (le_of_eq <| norm_smul _ _)
+      apply norm_integral_le_abs_of_norm_le
+      · sorry
+      · sorry
+    _ ≤ c 1 * |L|⁻¹ * ‖ψ b‖ + c 1 * |L|⁻¹ * |∫ x in a..b, ‖ψ' x‖| := by
+      gcongr; rw [integral_const_mul, abs_mul, abs_of_pos (show 0 < c 1 * |L|⁻¹ by positivity)]
+    _ = _ := by ring
 
 /-- **Van der Corput's lemma** for vector-valued amplitude functions, case `k ≥ 2`.
 For `k = 1` see `norm_integral_exp_mul_I_le_of_order_one`. -/
