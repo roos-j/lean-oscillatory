@@ -37,11 +37,35 @@ lemma _root_.ContinuousOn.forall_le_or_forall_le_of_forall_le_abs {a b : ℝ} {f
     (∀ x ∈ [[a, b]], 1 ≤ f x) ∨ (∀ x ∈ [[a, b]], f x ≤ -1) := by
   by_contra! h
   obtain ⟨⟨x₀, hx₀, hx₀'⟩, ⟨x₁, hx₁, hx₁'⟩⟩ := h
-  replace hx₀' : f x₀ ≤ -1 := by sorry -- use `hx₀` and `hf x₀`
-  replace hx₁' : f x₁ ≥ 1 := by sorry
+  replace hx₀' : f x₀ ≤ -1 := by 
+    rcases lt_or_ge (f x₀) 0 with hlt | hge
+    · have habs : |f x₀| = -f x₀ := abs_of_neg hlt
+      have h := hf x₀ hx₀
+      rw [habs] at h
+      linarith
+    · have habs : |f x₀| = f x₀ := abs_of_nonneg hge
+      have h := hf x₀ hx₀
+      rw [habs] at h
+      linarith [hx₀']
+  replace hx₁' : f x₁ ≥ 1 := by
+    rcases lt_or_ge (f x₁) 0 with hlt | hge
+    · have habs : |f x₁| = -f x₁ := abs_of_neg hlt
+      have h := hf x₁ hx₁
+      rw [habs] at h
+      linarith [hx₁']
+    · have habs : |f x₁| = f x₁ := abs_of_nonneg hge
+      have h := hf x₁ hx₁
+      rw [habs] at h
+      exact h
   have h1 : f x₀ ≤ f x₁ := by linarith
   have h2 : [[x₀, x₁]] ⊆ [[a, b]] := uIcc_subset_uIcc hx₀ hx₁
-  have : 0 ∈ [[f x₀, f x₁]] := by sorry -- start with `constructor`
+  have : 0 ∈ [[f x₀, f x₁]] := by
+    constructor
+    · apply le_trans (min_le_left _ _)
+      linarith [hx₀'] 
+    · have : 0 ≤ f x₁ := by linarith [hx₁']
+      apply le_trans _ (le_max_right _ _)
+      exact this
   obtain ⟨x, hx, hfx⟩ := intermediate_value_uIcc (hfcont.mono h2) this
   specialize hf x (h2 hx)
   rw [hfx] at hf
