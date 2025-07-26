@@ -76,7 +76,10 @@ abbrev VanDerCorput.c (k : ℕ) : ℝ := 5 * 2 ^ (k - 1) - 2
 theorem VanDerCorput.c_pos (k : ℕ) : 0 < c k := by
   induction' k with k ih
   · norm_num
-  · sorry
+  · norm_num 
+    have h : (2 ^ k : ℝ) ≥ 1 := by exact_mod_cast Nat.one_le_pow k 2 (by norm_num)
+    have := mul_le_mul_of_nonneg_left h (by norm_num : 0 ≤ (5 : ℝ))
+    exact lt_of_lt_of_le (by norm_num : (2 : ℝ) < 5 * 1) this
 
 open VanDerCorput
 
