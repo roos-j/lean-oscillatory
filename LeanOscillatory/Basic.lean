@@ -35,7 +35,7 @@ theorem deriv_e {φ' : ℝ} {x : ℝ} (hφ : HasDerivAt φ φ' x) :
 theorem D_exp_mul_I {φ' : ℝ} {x : ℝ} (hφ : HasDerivAt φ φ' x) (hφ' : φ' ≠ 0) : e (φ x) = (D φ) (fun x ↦ e (φ x)) x := by
   rw [D, deriv_e hφ (φ' := φ'), HasDerivAt.deriv hφ]
   have : φ' * I ≠ 0 := by sorry -- There should be a tactic `nonvanishing`
-  field_simp
+  grind only
 
 theorem iterate_D_exp_mul_I (n : ℕ) {φ' : ℝ} {x : ℝ} (hφ : HasDerivAt φ φ' x) (hφ' : φ' ≠ 0) :
     e (φ x) = (D φ)^[n] (fun x ↦ e (φ x)) x := by

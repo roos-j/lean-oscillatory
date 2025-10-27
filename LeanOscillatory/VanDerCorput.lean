@@ -37,7 +37,7 @@ lemma _root_.ContinuousOn.forall_le_or_forall_le_of_forall_le_abs {a b : ℝ} {f
     (∀ x ∈ [[a, b]], 1 ≤ f x) ∨ (∀ x ∈ [[a, b]], f x ≤ -1) := by
   by_contra! h
   obtain ⟨⟨x₀, hx₀, hx₀'⟩, ⟨x₁, hx₁, hx₁'⟩⟩ := h
-  replace hx₀' : f x₀ ≤ -1 := by 
+  replace hx₀' : f x₀ ≤ -1 := by
     rcases lt_or_ge (f x₀) 0 with hlt | hge
     · have habs : |f x₀| = -f x₀ := abs_of_neg hlt
       have h := hf x₀ hx₀
@@ -62,7 +62,7 @@ lemma _root_.ContinuousOn.forall_le_or_forall_le_of_forall_le_abs {a b : ℝ} {f
   have : 0 ∈ [[f x₀, f x₁]] := by
     constructor
     · apply le_trans (min_le_left _ _)
-      linarith [hx₀'] 
+      linarith [hx₀']
     · have : 0 ≤ f x₁ := by linarith [hx₁']
       apply le_trans _ (le_max_right _ _)
       exact this
@@ -76,7 +76,7 @@ abbrev VanDerCorput.c (k : ℕ) : ℝ := 5 * 2 ^ (k - 1) - 2
 theorem VanDerCorput.c_pos (k : ℕ) : 0 < c k := by
   induction' k with k ih
   · norm_num
-  · norm_num 
+  · norm_num
     have h : (2 ^ k : ℝ) ≥ 1 := by exact_mod_cast Nat.one_le_pow k 2 (by norm_num)
     have := mul_le_mul_of_nonneg_left h (by norm_num : 0 ≤ (5 : ℝ))
     exact lt_of_lt_of_le (by norm_num : (2 : ℝ) < 5 * 1) this
@@ -130,7 +130,6 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
     have := hnz2 hx
     have : ofReal L ^ 2 * (φ' x) ^ 2 ≠ 0 := by norm_cast; positivity
     field_simp
-    ring
 
   have hasDerivAt_v : ∀ x ∈ [[a, b]], HasDerivWithinAt v (v' x) [[a, b]] x := by
     intro x hx
@@ -145,17 +144,20 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
       refine integral_mul_deriv_eq_deriv_mul_of_hasDerivWithinAt hasDerivAt_u hasDerivAt_v ?_ ?_
       · exact ContinuousOn.intervalIntegrable (by fun_prop (discharger := assumption))
       · exact ContinuousOn.intervalIntegrable (by fun_prop (discharger := assumption))
-    intro x hx
-    simp only [u, v']
-    field_simp [hnz1 hx]
+    grind only
 
   have h2 {x : ℝ} (hx : x ∈ [[a, b]]) : ‖u x * v x‖ ≤ |L|⁻¹ := by
     simp only [u, v, norm_mul, norm_div, norm_one]
     norm_cast
     rw [norm_exp_ofReal_mul_I]
-    have : 0 < |L| * |φ' x| := by have := h x hx; positivity
+    have : 0 < ‖φ' x‖ := by have := h x hx; positivity
     refine le_of_mul_le_mul_left ?_ this
     field_simp [abs_of_pos, φ', h x hx]
+    by_cases hL : L = 0
+    · simp [hL]
+    · have := h x hx
+      have : 0 < |L| := by positivity
+      simpa [this]
 
   have hasDerivAt_φ'_int : ∀ x ∈ uIoo a b, HasDerivWithinAt (fun x ↦ -1 / φ' x) (φ'' x / (φ' x) ^ 2) (Ioi x) x := by
     intro x hx
