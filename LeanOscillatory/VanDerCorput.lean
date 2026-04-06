@@ -161,8 +161,8 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
 
   have hasDerivAt_φ'_int : ∀ x ∈ uIoo a b, HasDerivWithinAt (fun x ↦ -1 / φ' x) (φ'' x / (φ' x) ^ 2) (Ioi x) x := by
     intro x hx
-    have hx' := uIoo_subset_uIcc _ _ hx
-    have := ((hasDerivAt_φ' x hx').mono (uIoo_subset_uIcc _ _)).hasDerivAt <| uIoo_mem_nhds hx
+    have hx' := uIoo_subset_uIcc_self hx
+    have := ((hasDerivAt_φ' x hx').mono uIoo_subset_uIcc_self).hasDerivAt <| uIoo_mem_nhds hx
     convert HasDerivWithinAt.div (hasDerivWithinAt_const _ _ _) this.hasDerivWithinAt ?_ using 1
     · simp
     · exact hφ'_nz hx'
@@ -207,7 +207,7 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
         · rw [abs_of_nonneg hab]; linarith only [ha1, hb2]
         · rw [abs_of_neg hab]; linarith only [ha2, hb1]
     · apply ContinuousOn.intervalIntegrable
-      fun_prop (discharger := exact fun x hx ↦ by haveI := hφ'_nz hx; positivity)
+      fun_prop (discharger := try { exact fun x hx ↦ by haveI := hφ'_nz hx; positivity })
     · fun_prop (discharger := exact fun x hx ↦ by haveI := hφ'_nz hx; positivity)
 
   calc
@@ -233,7 +233,7 @@ end SpecialCase
 
 section GeneralCase
 
-variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [CompleteSpace E]
+variable {E : Type*} [NormedAddCommGroup E] [NormedSpace ℂ E] [CompleteSpace E] [IsScalarTower ℝ ℂ E]
 variable  {ψ : ℝ → E}
 
 /-- Auxiliary lemma for proving vector-valued versions of Van der Corput's lemma from scalar versions. -/

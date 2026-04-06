@@ -27,7 +27,8 @@ abbrev D (φ : ℝ → ℝ) (f : ℝ → ℂ) (x : ℝ) := (deriv φ x * I)⁻¹
 theorem _root_.HasDerivAt.e {φ' : ℝ} {x : ℝ} (hφ : HasDerivAt φ φ' x) :
     HasDerivAt (fun x ↦ e (φ x)) (φ' * I * e (φ x)) x := by
   convert HasDerivAt.cexp <| HasDerivAt.smul_const hφ I using 1
-  rw [Oscillatory.Preliminaries.e, real_smul, real_smul, mul_comm]
+  rw [mul_comm]
+  rfl
 
 theorem deriv_e {φ' : ℝ} {x : ℝ} (hφ : HasDerivAt φ φ' x) :
     deriv (fun x ↦ e (φ x)) x = φ' * I * e (φ x) := HasDerivAt.deriv <| HasDerivAt.e hφ
