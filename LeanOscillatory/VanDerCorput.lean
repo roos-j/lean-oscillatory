@@ -226,8 +226,23 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
 theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
     (hφ : ContDiffOn ℝ k φ [[a, b]]) (h : ∀ x ∈ [[a, b]], 1 ≤ |iteratedDerivWithin k φ [[a, b]] x|)
     (hL : L ≠ 0) : ‖∫ x in a..b, exp (L * φ x * I)‖ ≤ c k * |L| ^ (- (1 : ℝ) / k) := by
-  -- have h1 : ∫ x in a..b, exp (L * φ x * I) = ∫ x in a..b,
-  sorry
+  have h1 (c δ : ℝ) : ‖∫ x in a..b, exp (L * φ x * I)‖ ≤ ‖∫ x in a.. (c - δ) , exp (L * φ x * I)‖ +
+    ‖∫ x in (c - δ).. (c + δ) , exp (L * φ x * I)‖ + ‖∫ x in (c + δ).. b , exp (L * φ x * I)‖ := by sorry
+  have h2 (c δ : ℝ) (hδ : 0 < δ) : ‖∫ x in (c - δ).. (c + δ) , exp (L * φ x * I)‖ ≤ 2 * δ := by sorry
+  induction' k with k ih
+  focus contradiction
+  match k with
+  | 0 => contradiction
+  | 1 =>
+    have ih {L : ℝ} := norm_integral_exp_mul_I_le_of_order_one' hφ (L := L)
+    sorry
+  | k + 2 =>
+    letI δ := L ^ (-(1 : ℝ) / (k + 3))
+    sorry
+    --have := ContinuousOn.forall_le_or_forall_le_of_forall_le_abs ?_
+
+
+
 
 end SpecialCase
 
