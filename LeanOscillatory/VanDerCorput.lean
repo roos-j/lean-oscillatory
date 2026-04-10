@@ -288,15 +288,17 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
   -- have hIr : ∀ x ∈ [[c₂, b]], δ ≤ |iteratedDerivWithin k φ (Icc a b) x| := by
   --   sorry
 
-  have hac₁: [[a, c₁]] ⊆ [[a, b]] := by
-    sorry
-  have hc₁b : [[c₁, b]] ⊆ [[a, b]] := by
-    sorry
-  have hc₁c₂ : [[c₁, c₂]] ⊆ [[a, b]] := by
-    sorry
-  have hc₂b : [[c₂, b]] ⊆ [[a, b]] := by
-    sorry
-
+  have hδ_nonneg : 0 ≤ δ := by positivity
+  have hc₁_mem : c₁ ∈ [[a, b]] :=
+    ⟨le_trans (min_le_left a b) (le_max_left a (d - δ)),
+     max_le (le_max_left a b) (le_trans (sub_le_self d hδ_nonneg) hd.2)⟩
+  have hc₂_mem : c₂ ∈ [[a, b]] :=
+    ⟨le_min (min_le_right a b) (le_trans hd.1 (le_add_of_nonneg_right hδ_nonneg)),
+     le_trans (min_le_left b (d + δ)) (le_max_right a b)⟩
+  have hac₁: [[a, c₁]] ⊆ [[a, b]] := uIcc_subset_uIcc left_mem_uIcc hc₁_mem
+  have hc₁b : [[c₁, b]] ⊆ [[a, b]] := uIcc_subset_uIcc hc₁_mem right_mem_uIcc
+  have hc₁c₂ : [[c₁, c₂]] ⊆ [[a, b]] := uIcc_subset_uIcc hc₁_mem hc₂_mem
+  have hc₂b : [[c₂, b]] ⊆ [[a, b]] := uIcc_subset_uIcc hc₂_mem right_mem_uIcc
 
   have := hφc.continuousOn
 
