@@ -1,5 +1,6 @@
--- This module serves as the root of the `LeanOscillatory` library.
--- Import modules here that should be built as part of the library.
 import LeanOscillatory.VanDerCorput
 
 #version
+
+#print axioms Oscillatory.norm_integral_exp_mul_I_le_of_order_one
+#print axioms Oscillatory.norm_integral_exp_mul_I_le_of_order_ge_two
