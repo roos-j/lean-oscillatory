@@ -2,9 +2,10 @@
 
 This is a project on formalizing some of the standard theory on oscillatory integrals in Lean 4.
 
-### Fully formalized
+### Completed
 
 * The classical van der Corput lemma on the real line
+
   `Oscillatory.norm_integral_exp_mul_I_le_of_order_one`
 
   `Oscillatory.norm_integral_exp_mul_I_le_of_order_ge_two`
