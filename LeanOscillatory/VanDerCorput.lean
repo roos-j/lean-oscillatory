@@ -5,7 +5,13 @@ Authors: Joris Roos, Manasa Praveen
 -/
 module
 
-public import Mathlib
+public import Mathlib.Analysis.Calculus.IteratedDeriv.Defs
+public import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
+
+import Mathlib.Analysis.Calculus.Deriv.Inv
+import Mathlib.Analysis.SpecialFunctions.ExpDeriv
+import Mathlib.Tactic.Cases
+import Mathlib.MeasureTheory.Integral.IntervalIntegral.IntegrationByParts
 
 /-!
 # Van der Corput's lemma
