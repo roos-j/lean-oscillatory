@@ -7,23 +7,6 @@ module
 
 public import Mathlib
 
--- public import Mathlib.Analysis.Calculus.Deriv.Linear
--- public import Mathlib.Analysis.Complex.Basic
--- import Mathlib.Analysis.Calculus.Deriv.Comp
-section Analysis.Complex.RealDeriv
-
-variable {s : Set ℝ} {z : ℝ}
-
-open Complex in
-set_option backward.isDefEq.respectTransparency false in -- Lean has a new bug/feature(?) which makes this necessary
-public theorem HasDerivWithinAt.ofReal_comp {f : ℝ → ℝ} {u : ℝ} (hf : HasDerivWithinAt f u s z) :
-    HasDerivWithinAt (fun y : ℝ => ↑(f y) : ℝ → ℂ) u s z := by
-  simpa only [ofRealCLM_apply, ofReal_one, real_smul, mul_one] using
-    ofRealCLM.hasDerivWithinAt.scomp z hf <| fun _ _ ↦ Set.mem_univ _
-
-end Analysis.Complex.RealDeriv
-
-
 /-!
 # Van der Corput's lemma
 
@@ -46,12 +29,9 @@ in one real variable, following Stein.
 * E. M. Stein, *Harmonic Analysis: Real-Variable Methods, Orthogonality and Oscillatory
   Integrals*, Ch. VIII.1, Prop. 2, pp. 332–334.
 
-## Tags
-
-oscillatory integral, van der Corput, stationary phase
 -/
 
-noncomputable section
+@[expose] public noncomputable section
 
 namespace Oscillatory
 
@@ -343,23 +323,24 @@ public theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤
       positivity
     · convert this (by rwa [uIcc_comm]) (by rwa [uIcc_comm]) hba using 1
       rw [integral_symm, norm_neg]
-  clear * - hk hL hφc hφ hab
   revert hk hL
   intros hk hL
   have hφc' := hφc.continuousOn_iteratedDerivWithin (m := k) (by rfl)
     (uniqueDiffOn_Icc <| min_lt_max.mpr hab.ne)
-  wlog hφ' : ∀ x ∈ [[a, b]], 1 ≤ iteratedDerivWithin k φ [[a, b]] x
+  wlog hφ' : ∀ x ∈ [[a, b]], 1 ≤ iteratedDerivWithin k φ [[a, b]] x generalizing φ L
   · rcases hφc'.forall_le_or_forall_le_of_forall_le_abs hφ with _ | hφ'
     · contradiction
     have hφ'' : ∀ x ∈ [[a, b]], 1 ≤ iteratedDerivWithin k (-φ) [[a, b]] x := by
       intro x hx
       rw [iteratedDerivWithin_neg]
       linarith only [hφ' x hx]
-    convert this ?_ ?_ hab hk (show -L ≠ 0 by simp [hL]) ?_ hφ'' using 3
+    convert this hφc.neg ?_ (show -L ≠ 0 by simp [hL]) ?_ hφ'' using 3
     · simp
     · simp
-    · exact hφc.neg
-    · exact fun x hx ↦ by rw [iteratedDerivWithin_neg, abs_neg]; exact hφ x hx
+    · intro x hx
+      change 1 ≤ |iteratedDerivWithin k (-φ) [[a, b]] x|
+      rw [iteratedDerivWithin_neg, abs_neg]
+      exact hφ x hx
     · convert hφc'.neg using 2
       exact iteratedDerivWithin_neg _
   clear hφ
@@ -469,9 +450,9 @@ public theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤
         hψc.continuousOn_iteratedDerivWithin (by rfl) hud_αβ
       rcases hψc'.forall_le_or_forall_le_of_forall_le_abs hψ_bd with hψ_sgn | hψ_sgn
       · rcases lt_or_gt_of_ne hαβ' with hlt | hlt
-        · exact hLδ_eq ▸ ih hψc hlt hk' hδL_ne hψc' hψ_sgn
+        · exact hLδ_eq ▸ ih hlt hk' hψc hδL_ne hψc' hψ_sgn
         · rw [integral_symm, norm_neg]
-          exact hLδ_eq ▸ ih (by rwa [uIcc_comm]) hlt hk' hδL_ne
+          exact hLδ_eq ▸ ih hlt hk' (by rwa [uIcc_comm]) hδL_ne
             (by rwa [uIcc_comm]) (by rwa [uIcc_comm])
       · have neg_eq (x : ℝ) : cexp (↑(δ * L) * ↑((δ⁻¹ • φ) x) * I) =
             cexp (↑(-(δ * L)) * ↑((-(δ⁻¹ • φ)) x) * I) := by
@@ -486,9 +467,9 @@ public theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤
         have hψc'_neg : ContinuousOn (iteratedDerivWithin k (-(δ⁻¹ • φ)) [[α, β]]) [[α, β]] := by
           convert hψc'.neg using 2; exact iteratedDerivWithin_neg _
         rcases lt_or_gt_of_ne hαβ' with hlt | hlt
-        · exact hconv ▸ ih hψc_neg hlt hk' (neg_ne_zero.mpr hδL_ne) hψc'_neg hψ_neg_pos
+        · exact hconv ▸ ih hlt hk' hψc_neg (neg_ne_zero.mpr hδL_ne) hψc'_neg hψ_neg_pos
         · rw [integral_symm, norm_neg]
-          exact hconv ▸ ih (by rwa [uIcc_comm]) hlt hk' (neg_ne_zero.mpr hδL_ne)
+          exact hconv ▸ ih hlt hk' (by rwa [uIcc_comm]) (neg_ne_zero.mpr hδL_ne)
             (by rwa [uIcc_comm]) (by rwa [uIcc_comm])
 
 
