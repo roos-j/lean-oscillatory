@@ -25,10 +25,14 @@ in one real variable, following Stein.
 
 ## Main statements
 
-* `norm_integral_exp_mul_I_le_of_order_one`:
-  van der Corput's lemma for vector-valued amplitude, first order case.
-* `norm_integral_exp_mul_I_le_of_order_ge_two`:
-  van der Corput's lemma for vector-valued amplitude, order `k ≥ 2`.
+* `Oscillatory.norm_integral_exp_mul_I_le_of_order_one`:
+  Vector-valued amplitude, first order case
+* `Oscillatory.norm_integral_exp_mul_I_le_of_order_one'`:
+  Scalar version, first order case
+* `Oscillatory.norm_integral_exp_mul_I_le_of_order_ge_two`:
+  Vector-valued amplitude, higher-order case
+* `Oscillatory.norm_integral_exp_mul_I_le_of_order_ge_two'`:
+  Scalar version, higher-order case
 
 ## References
 
@@ -46,9 +50,33 @@ open intervalIntegral Interval
 
 namespace VanDerCorput
 
+public abbrev c (k : ℕ) : ℝ := 5 * 2 ^ (k - 1) - 2
+
+theorem c_pos (k : ℕ) : 0 < c k := by
+  induction' k with k ih
+  · norm_num
+  · norm_num
+    have h : (2 ^ k : ℝ) ≥ 1 := by exact_mod_cast Nat.one_le_pow k 2 (by norm_num)
+    have := mul_le_mul_of_nonneg_left h (by norm_num : 0 ≤ (5 : ℝ))
+    exact lt_of_lt_of_le (by norm_num : (2 : ℝ) < 5 * 1) this
+
+theorem c_rec {k : ℕ} (hk : 1 ≤ k) : 2 * c k + 2 = c (k + 1) := by
+    simp only [c, add_tsub_cancel_right]
+    conv_rhs => rw [show k = (k - 1) + 1 by omega, pow_succ]
+    ring
+
+end VanDerCorput
+
+open VanDerCorput
+
+variable {a b : ℝ} {L : ℝ}
+variable {φ : ℝ → ℝ}
+variable {k : ℕ}
+
+
 /-- If `f` is continuous on `[a, b]` and `|f x| ≥ 1` for all `x ∈ [a, b]`,
   then either `f x ≥ 1` for all `x ∈ [a, b]` or `f x ≤ -1` for all `x ∈ [a, b]`. -/
-theorem _root_.ContinuousOn.forall_le_or_forall_le_of_forall_le_abs {a b : ℝ} {f : ℝ → ℝ}
+private theorem _root_.ContinuousOn.forall_le_or_forall_le_of_forall_le_abs {a b : ℝ} {f : ℝ → ℝ}
     (hfcont : ContinuousOn f [[a, b]]) (hf : ∀ x ∈ [[a, b]], 1 ≤ |f x|) :
     (∀ x ∈ [[a, b]], 1 ≤ f x) ∨ (∀ x ∈ [[a, b]], f x ≤ -1) := by
   by_contra! h
@@ -87,31 +115,8 @@ theorem _root_.ContinuousOn.forall_le_or_forall_le_of_forall_le_abs {a b : ℝ} 
   rw [hfx] at hf
   norm_num at hf
 
-public abbrev c (k : ℕ) : ℝ := 5 * 2 ^ (k - 1) - 2
-
-theorem c_pos (k : ℕ) : 0 < c k := by
-  induction' k with k ih
-  · norm_num
-  · norm_num
-    have h : (2 ^ k : ℝ) ≥ 1 := by exact_mod_cast Nat.one_le_pow k 2 (by norm_num)
-    have := mul_le_mul_of_nonneg_left h (by norm_num : 0 ≤ (5 : ℝ))
-    exact lt_of_lt_of_le (by norm_num : (2 : ℝ) < 5 * 1) this
-
-theorem c_rec {k : ℕ} (hk : 1 ≤ k) : 2 * c k + 2 = c (k + 1) := by
-    simp only [c, add_tsub_cancel_right]
-    conv_rhs => rw [show k = (k - 1) + 1 by omega, pow_succ]
-    ring
-
-end VanDerCorput
-
-open VanDerCorput
-
-variable {a b : ℝ} {L : ℝ}
-variable {φ : ℝ → ℝ}
-variable {k : ℕ}
-
 /-- Auxiliary lemma used in the proof of van der Corput's lemma -/
-theorem _root_.ContDiffOn.exists_le_abs_of_le_derivWithin
+private theorem _root_.ContDiffOn.exists_le_abs_of_le_derivWithin
     (hφ : ContDiffOn ℝ 1 φ [[a, b]]) (h : ∀ x ∈ [[a, b]], 1 ≤ derivWithin φ [[a, b]] x) :
     ∃ c ∈ [[a, b]], ∀ x ∈ [[a, b]], |x - c| ≤ |φ x| := by
   have hφ_cont := hφ.continuousOn
@@ -167,7 +172,7 @@ section SpecialCase
 
 /-- **Van der Corput's lemma**. Special case of `norm_integral_exp_mul_I_le_of_order_one`
   where the amplitude function is constant and scalar.  -/
-public theorem norm_integral_exp_mul_I_le_of_order_one'
+theorem norm_integral_exp_mul_I_le_of_order_one'
     (hφ : ContDiffOn ℝ 2 φ [[a, b]]) (h : ∀ x ∈ [[a, b]], 1 ≤ |derivWithin φ [[a, b]] x|)
     (hφ'_mono : MonotoneOn (derivWithin φ [[a, b]]) [[a, b]])
     (hL : L ≠ 0) :
@@ -317,7 +322,7 @@ public theorem norm_integral_exp_mul_I_le_of_order_one'
 
 /-- **Van der Corput's lemma**. Special case of `norm_integral_exp_mul_I_le_of_order_ge_two`
   where the amplitude function is constant and scalar.  -/
-public theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
+theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
     (hφc : ContDiffOn ℝ k φ [[a, b]])
     (hφ : ∀ x ∈ [[a, b]], 1 ≤ |iteratedDerivWithin k φ [[a, b]] x|)
     (hL : L ≠ 0) :
@@ -556,7 +561,7 @@ variable {ψ : ℝ → E}
 
 /-- Auxiliary lemma for proving vector-valued versions of Van der Corput's lemma
 from scalar versions. -/
-theorem norm_integral_exp_mul_I_smul_le_of_norm_integral_exp_mul_I {A : ℝ} (hA : 0 < A)
+private theorem norm_integral_exp_mul_I_smul_le_of_norm_integral_exp_mul_I {A : ℝ} (hA : 0 < A)
     (hest : ∀ y ∈ [[a, b]], ‖∫ x in a..y, exp (L * φ x * I)‖ ≤ A)
     (hφ_cont : ContinuousOn φ [[a, b]]) (hψ : ContDiffOn ℝ 1 ψ [[a, b]]) :
     ‖∫ x in a..b, exp (L * φ x * I) • ψ x‖ ≤
@@ -605,7 +610,7 @@ theorem norm_integral_exp_mul_I_smul_le_of_norm_integral_exp_mul_I {A : ℝ} (hA
 
 /-- **Van der Corput's lemma** for vector-valued amplitude functions, first order case.
 For second and higher order see `norm_integral_exp_mul_I_le_of_order_ge_two`. -/
-public theorem norm_integral_exp_mul_I_le_of_order_one
+theorem norm_integral_exp_mul_I_le_of_order_one
     (hφ : ContDiffOn ℝ 2 φ [[a, b]]) (hψ : ContDiffOn ℝ 1 ψ [[a, b]])
     (h : ∀ x ∈ [[a, b]], 1 ≤ |derivWithin φ [[a, b]] x|)
     (hφ'_mono : MonotoneOn (derivWithin φ [[a, b]]) [[a, b]])
@@ -632,7 +637,7 @@ public theorem norm_integral_exp_mul_I_le_of_order_one
 
 /-- **Van der Corput's lemma** for vector-valued amplitude functions, case `k ≥ 2`.
 For `k = 1` see `norm_integral_exp_mul_I_le_of_order_one`. -/
-public theorem norm_integral_exp_mul_I_le_of_order_ge_two {k : ℕ} (hk : 2 ≤ k)
+theorem norm_integral_exp_mul_I_le_of_order_ge_two {k : ℕ} (hk : 2 ≤ k)
     (hφ : ContDiffOn ℝ k φ [[a, b]]) (hψ : ContDiffOn ℝ 1 ψ [[a, b]])
     (h : ∀ x ∈ [[a, b]], 1 ≤ |iteratedDerivWithin k φ [[a, b]] x|)
     (hL : L ≠ 0) :
