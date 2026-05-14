@@ -3,7 +3,26 @@ Copyright (c) 2025 Joris Roos. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Joris Roos, Manasa Praveen
 -/
-import LeanOscillatory.ToMathlib
+module
+
+public import Mathlib
+
+-- public import Mathlib.Analysis.Calculus.Deriv.Linear
+-- public import Mathlib.Analysis.Complex.Basic
+-- import Mathlib.Analysis.Calculus.Deriv.Comp
+section Analysis.Complex.RealDeriv
+
+variable {s : Set ℝ} {z : ℝ}
+
+open Complex in
+set_option backward.isDefEq.respectTransparency false in -- Lean has a new bug/feature(?) which makes this necessary
+public theorem HasDerivWithinAt.ofReal_comp {f : ℝ → ℝ} {u : ℝ} (hf : HasDerivWithinAt f u s z) :
+    HasDerivWithinAt (fun y : ℝ => ↑(f y) : ℝ → ℂ) u s z := by
+  simpa only [ofRealCLM_apply, ofReal_one, real_smul, mul_one] using
+    ofRealCLM.hasDerivWithinAt.scomp z hf <| fun _ _ ↦ Set.mem_univ _
+
+end Analysis.Complex.RealDeriv
+
 
 /-!
 # Van der Corput's lemma
@@ -82,7 +101,7 @@ theorem _root_.ContinuousOn.forall_le_or_forall_le_of_forall_le_abs {a b : ℝ} 
   rw [hfx] at hf
   norm_num at hf
 
-abbrev c (k : ℕ) : ℝ := 5 * 2 ^ (k - 1) - 2
+public abbrev c (k : ℕ) : ℝ := 5 * 2 ^ (k - 1) - 2
 
 theorem c_pos (k : ℕ) : 0 < c k := by
   induction' k with k ih
@@ -162,7 +181,7 @@ section SpecialCase
 
 /-- **Van der Corput's lemma**. Special case of `norm_integral_exp_mul_I_le_of_order_one`
   where the amplitude function is constant and scalar.  -/
-theorem norm_integral_exp_mul_I_le_of_order_one'
+public theorem norm_integral_exp_mul_I_le_of_order_one'
     (hφ : ContDiffOn ℝ 2 φ [[a, b]]) (h : ∀ x ∈ [[a, b]], 1 ≤ |derivWithin φ [[a, b]] x|)
     (hφ'_mono : MonotoneOn (derivWithin φ [[a, b]]) [[a, b]])
     (hL : L ≠ 0) :
@@ -312,7 +331,7 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
 
 /-- **Van der Corput's lemma**. Special case of `norm_integral_exp_mul_I_le_of_order_ge_two`
   where the amplitude function is constant and scalar.  -/
-theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
+public theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
     (hφc : ContDiffOn ℝ k φ [[a, b]])
     (hφ : ∀ x ∈ [[a, b]], 1 ≤ |iteratedDerivWithin k φ [[a, b]] x|)
     (hL : L ≠ 0) :
@@ -599,7 +618,7 @@ theorem norm_integral_exp_mul_I_smul_le_of_norm_integral_exp_mul_I {A : ℝ} (hA
 
 /-- **Van der Corput's lemma** for vector-valued amplitude functions, first order case.
 For second and higher order see `norm_integral_exp_mul_I_le_of_order_ge_two`. -/
-theorem norm_integral_exp_mul_I_le_of_order_one
+public theorem norm_integral_exp_mul_I_le_of_order_one
     (hφ : ContDiffOn ℝ 2 φ [[a, b]]) (hψ : ContDiffOn ℝ 1 ψ [[a, b]])
     (h : ∀ x ∈ [[a, b]], 1 ≤ |derivWithin φ [[a, b]] x|)
     (hφ'_mono : MonotoneOn (derivWithin φ [[a, b]]) [[a, b]])
@@ -626,7 +645,7 @@ theorem norm_integral_exp_mul_I_le_of_order_one
 
 /-- **Van der Corput's lemma** for vector-valued amplitude functions, case `k ≥ 2`.
 For `k = 1` see `norm_integral_exp_mul_I_le_of_order_one`. -/
-theorem norm_integral_exp_mul_I_le_of_order_ge_two {k : ℕ} (hk : 2 ≤ k)
+public theorem norm_integral_exp_mul_I_le_of_order_ge_two {k : ℕ} (hk : 2 ≤ k)
     (hφ : ContDiffOn ℝ k φ [[a, b]]) (hψ : ContDiffOn ℝ 1 ψ [[a, b]])
     (h : ∀ x ∈ [[a, b]], 1 ≤ |iteratedDerivWithin k φ [[a, b]] x|)
     (hL : L ≠ 0) :
