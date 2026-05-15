@@ -10,8 +10,8 @@ public import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 
 import Mathlib.Analysis.Calculus.Deriv.Inv
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
-import Mathlib.Tactic.Cases
 import Mathlib.MeasureTheory.Integral.IntervalIntegral.IntegrationByParts
+import Mathlib.Tactic.Cases
 
 /-!
 # Van der Corput's lemma
@@ -41,7 +41,7 @@ in one real variable, following Stein.
 
 -/
 
-@[expose] public noncomputable section
+@[expose] public section
 
 namespace Oscillatory
 
@@ -50,7 +50,8 @@ open intervalIntegral Interval
 
 namespace VanDerCorput
 
-public abbrev c (k : ℕ) : ℝ := 5 * 2 ^ (k - 1) - 2
+/-- The constant appearing in van der Corput's lemma. -/
+abbrev c (k : ℕ) : ℝ := 5 * 2 ^ (k - 1) - 2
 
 theorem c_pos (k : ℕ) : 0 < c k := by
   induction' k with k ih
@@ -61,9 +62,9 @@ theorem c_pos (k : ℕ) : 0 < c k := by
     exact lt_of_lt_of_le (by norm_num : (2 : ℝ) < 5 * 1) this
 
 theorem c_rec {k : ℕ} (hk : 1 ≤ k) : 2 * c k + 2 = c (k + 1) := by
-    simp only [c, add_tsub_cancel_right]
-    conv_rhs => rw [show k = (k - 1) + 1 by omega, pow_succ]
-    ring
+  simp only [c, add_tsub_cancel_right]
+  conv_rhs => rw [show k = (k - 1) + 1 by omega, pow_succ]
+  ring
 
 end VanDerCorput
 
@@ -73,50 +74,24 @@ variable {a b : ℝ} {L : ℝ}
 variable {φ : ℝ → ℝ}
 variable {k : ℕ}
 
-
-/-- If `f` is continuous on `[a, b]` and `|f x| ≥ 1` for all `x ∈ [a, b]`,
-  then either `f x ≥ 1` for all `x ∈ [a, b]` or `f x ≤ -1` for all `x ∈ [a, b]`. -/
-private theorem _root_.ContinuousOn.forall_le_or_forall_le_of_forall_le_abs {a b : ℝ} {f : ℝ → ℝ}
-    (hfcont : ContinuousOn f [[a, b]]) (hf : ∀ x ∈ [[a, b]], 1 ≤ |f x|) :
+/-- Auxiliary: If `f` is continuous on `[a, b]` and `|f x| ≥ 1` for all `x ∈ [a, b]`, then either
+`f x ≥ 1` for all `x ∈ [a, b]` or `f x ≤ -1` for all `x ∈ [a, b]`. -/
+private theorem forall_le_or_forall_le_of_forall_le_abs {a b : ℝ}
+    {f : ℝ → ℝ} (hfcont : ContinuousOn f [[a, b]])
+    (hf : ∀ x ∈ [[a, b]], 1 ≤ |f x|) :
     (∀ x ∈ [[a, b]], 1 ≤ f x) ∨ (∀ x ∈ [[a, b]], f x ≤ -1) := by
-  by_contra! h
-  obtain ⟨⟨x₀, hx₀, hx₀'⟩, ⟨x₁, hx₁, hx₁'⟩⟩ := h
-  replace hx₀' : f x₀ ≤ -1 := by
-    rcases lt_or_ge (f x₀) 0 with hlt | hge
-    · have habs : |f x₀| = -f x₀ := abs_of_neg hlt
-      have h := hf x₀ hx₀
-      rw [habs] at h
-      linarith
-    · have habs : |f x₀| = f x₀ := abs_of_nonneg hge
-      have h := hf x₀ hx₀
-      rw [habs] at h
-      linarith [hx₀']
-  replace hx₁' : f x₁ ≥ 1 := by
-    rcases lt_or_ge (f x₁) 0 with hlt | hge
-    · have habs : |f x₁| = -f x₁ := abs_of_neg hlt
-      have h := hf x₁ hx₁
-      rw [habs] at h
-      linarith [hx₁']
-    · have habs : |f x₁| = f x₁ := abs_of_nonneg hge
-      have h := hf x₁ hx₁
-      rw [habs] at h
-      exact h
-  have h1 : f x₀ ≤ f x₁ := by linarith
-  have h2 : [[x₀, x₁]] ⊆ [[a, b]] := uIcc_subset_uIcc hx₀ hx₁
-  have : 0 ∈ [[f x₀, f x₁]] := by
-    constructor
-    · apply le_trans (min_le_left ..)
-      linarith [hx₀']
-    · have : 0 ≤ f x₁ := by linarith [hx₁']
-      apply le_trans _ (le_max_right ..)
-      exact this
-  obtain ⟨x, hx, hfx⟩ := intermediate_value_uIcc (hfcont.mono h2) this
-  specialize hf x (h2 hx)
-  rw [hfx] at hf
-  norm_num at hf
+  rcases isPreconnected_uIcc.mapsTo_Ioi_or_Iio (b := (0 : ℝ)) hfcont
+      (fun x hx h ↦ zero_lt_one.not_ge <| by simpa [h] using hf x hx) with hp | hn
+  · left; intro x hx
+    have hxpos : 0 ≤ f x := (hp hx).le
+    simpa [abs_of_nonneg hxpos] using hf x hx
+  · right; intro x hx
+    have hxneg : f x ≤ 0 := (hn hx).le
+    rw [le_neg]
+    simpa [abs_of_nonpos hxneg] using hf x hx
 
-/-- Auxiliary lemma used in the proof of van der Corput's lemma -/
-private theorem _root_.ContDiffOn.exists_le_abs_of_le_derivWithin
+/-- Auxiliary lemma used in the higher-order proof -/
+private theorem exists_le_abs_of_le_derivWithin
     (hφ : ContDiffOn ℝ 1 φ [[a, b]]) (h : ∀ x ∈ [[a, b]], 1 ≤ derivWithin φ [[a, b]] x) :
     ∃ c ∈ [[a, b]], ∀ x ∈ [[a, b]], |x - c| ≤ |φ x| := by
   have hφ_cont := hφ.continuousOn
@@ -142,31 +117,26 @@ private theorem _root_.ContDiffOn.exists_le_abs_of_le_derivWithin
   have hmax_mem : max a b ∈ [[a, b]] := ⟨min_le_max, le_rfl⟩
   rcases le_or_gt 0 (φ (min a b)) with hmin | hmin
   · refine ⟨min a b, hmin_mem, fun x hx ↦ ?_⟩
-    have hle : min a b ≤ x := hx.1
-    rw [abs_of_nonneg (sub_nonneg.mpr hle)]
-    have hφx : 0 ≤ φ x := le_trans hmin (by linarith [hmvt _ hmin_mem _ hx hle])
-    rw [abs_of_nonneg hφx]
-    linarith [hmvt _ hmin_mem _ hx hle]
+    rw [abs_of_nonneg (sub_nonneg.mpr hx.1),
+      abs_of_nonneg (le_trans hmin (by linarith [hmvt _ hmin_mem _ hx hx.1, hx.1]))]
+    linarith [hmvt _ hmin_mem _ hx hx.1, hx.1]
   · rcases le_or_gt (φ (max a b)) 0 with hmax | hmax
     · refine ⟨max a b, hmax_mem, fun x hx ↦ ?_⟩
-      have hle : x ≤ max a b := hx.2
-      rw [abs_of_nonpos (sub_nonpos.mpr hle)]
-      have hφx : φ x ≤ 0 := le_trans (by linarith [hmvt _ hx _ hmax_mem hle]) hmax
-      rw [abs_of_nonpos hφx]
-      linarith [hmvt _ hx _ hmax_mem hle]
+      rw [abs_of_nonpos (sub_nonpos.mpr hx.2),
+        abs_of_nonpos (le_trans (by linarith [hmvt _ hx _ hmax_mem hx.2, hx.2]) hmax)]
+      linarith [hmvt _ hx _ hmax_mem hx.2, hx.2]
     · have h0 : (0 : ℝ) ∈ [[φ (min a b), φ (max a b)]] := by
         rw [uIcc_of_le (by linarith)]; exact ⟨hmin.le, hmax.le⟩
       obtain ⟨c, hc, hfc⟩ := intermediate_value_uIcc
         (hφ_cont.mono (uIcc_subset_uIcc hmin_mem hmax_mem)) h0
       have hc' : c ∈ [[a, b]] := uIcc_subset_uIcc hmin_mem hmax_mem hc
       refine ⟨c, hc', fun x hx ↦ ?_⟩
-      have heq : |φ x| = |φ x - φ c| := by rw [hfc, sub_zero]
-      rw [heq]
+      rw [(show |φ x| = |φ x - φ c| by rw [hfc, sub_zero])]
       rcases le_or_gt c x with hle | hlt
       · rw [abs_of_nonneg (sub_nonneg.mpr hle), abs_of_nonneg (by linarith [hmvt _ hc' _ hx hle])]
-        linarith [hmvt _ hc' _ hx hle]
+        linarith only [hmvt _ hc' _ hx hle]
       · rw [abs_of_neg (sub_neg.mpr hlt), abs_of_nonpos (by linarith [hmvt _ hx _ hc' hlt.le])]
-        linarith [hmvt _ hx _ hc' hlt.le]
+        linarith only [hmvt _ hx _ hc' hlt.le]
 
 section SpecialCase
 
@@ -186,20 +156,16 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
     fun x hx ↦ ((hφ.contDiffWithinAt hx).differentiableWithinAt
       (by norm_num)).hasDerivWithinAt
   have hφ'_cont := hφ.continuousOn_derivWithin hud_ab (by norm_num)
-
-  have h' := hφ'_cont.forall_le_or_forall_le_of_forall_le_abs h
+  have h' := forall_le_or_forall_le_of_forall_le_abs
+    hφ'_cont h
 
   let φ'' := fun x ↦ derivWithin φ' [[a, b]] x
   have hasDerivAt_φ' : ∀ x ∈ [[a, b]], HasDerivWithinAt φ' (φ'' x) [[a, b]] x :=
     fun x hx ↦ (hφ.contDiffWithinAt hx).derivWithin (m := 1) hud_ab (by norm_num) hx |>
       fun h ↦ (h.differentiableWithinAt <| by norm_num).hasDerivWithinAt
   have hφ''_cont : ContinuousOn φ'' [[a, b]] := by
-    convert hφ.continuousOn_iteratedDerivWithin (m := 2) (by norm_num) hud_ab; ext
-    rw [iteratedDerivWithin_succ, iteratedDerivWithin_one]
-
-  obtain ⟨x₀, _, hx₀⟩ := isCompact_uIcc.exists_isMaxOn nonempty_uIcc <| ContinuousOn.abs hφ''_cont
-  have hC₀ := isMaxOn_iff.mp hx₀
-  set C₀ := |φ'' x₀|
+    simpa [φ'', iteratedDerivWithin_succ, iteratedDerivWithin_one] using
+      hφ.continuousOn_iteratedDerivWithin (m := 2) (by norm_num) hud_ab
 
   let u := fun x ↦ 1 / (L * φ' x * I)
   let v := fun x ↦ exp (L * φ x * I)
@@ -227,8 +193,7 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
     intro x hx
     convert HasDerivWithinAt.cexp (.mul (.mul (hasDerivWithinAt_const ..)
       (.ofReal_comp <| hasDerivAt_φ _ hx)) (hasDerivWithinAt_const ..)) using 1
-    simp [v']
-    ring
+    simp [v']; ring
 
   have h1 : ∫ x in a..b, exp (L * φ x * I) = u b * v b - u a * v a - ∫ x in a..b, u' x * v x := by
     suffices h'' : ∀ x ∈ [[a, b]], exp (L * φ x * I) = u x * v' x by
@@ -243,14 +208,10 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
     simp only [u, v, norm_mul, norm_div, norm_one]
     norm_cast
     rw [norm_exp_ofReal_mul_I]
-    have : 0 < ‖φ' x‖ := by have := h x hx; positivity
-    refine le_of_mul_le_mul_left ?_ this
-    field_simp [abs_of_pos, φ', h x hx]
-    by_cases hL : L = 0
-    · simp [hL]
-    · have := h x hx
-      have : 0 < |L| := by positivity
-      simpa [this]
+    have hφ'_norm : 1 ≤ ‖φ' x‖ := by simpa [φ', Real.norm_eq_abs] using h x hx
+    refine le_of_mul_le_mul_left ?_ (lt_of_lt_of_le zero_lt_one hφ'_norm)
+    field_simp [φ', h x hx]
+    simpa [Real.norm_eq_abs, norm_I] using le_mul_of_one_le_left (abs_nonneg L) hφ'_norm
 
   have hasDerivAt_φ'_int : ∀ x ∈ uIoo a b,
       HasDerivWithinAt (fun x ↦ -1 / φ' x)
@@ -271,7 +232,7 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
     field_simp
     rfl
 
-  have hv {x : ℝ} : ‖v x‖ = 1 := by simp only [v]; exact_mod_cast norm_exp_ofReal_mul_I _
+  have hv {x : ℝ} : ‖v x‖ = 1 := by simpa [v] using norm_exp_ofReal_mul_I (L * φ x)
 
   have h3 : ‖∫ x in a..b, u' x * v x‖ ≤ |L|⁻¹ := by
     apply le_trans norm_integral_le_abs_integral_norm
@@ -281,31 +242,28 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
     · rw [abs_mul, abs_of_pos (show 0 < |L|⁻¹ by positivity)]
       refine le_of_mul_le_mul_right ?_ (show 0 < |L| by positivity)
       rw [mul_assoc, inv_mul_cancel₀ (by positivity), mul_one, neg_div, neg_div, sub_neg_eq_add]
-      rcases h' with h' | h'
-      · have ha1 := div_nonneg zero_le_one <| le_trans zero_le_one <| h' _ left_mem_uIcc
-        have hb1 := div_nonneg zero_le_one <| le_trans zero_le_one <| h' _ right_mem_uIcc
-        have := one_div_le (lt_of_lt_of_le zero_lt_one <| h' _ left_mem_uIcc) zero_lt_one |>.mpr
-        have ha2 := div_self (G₀ := ℝ) one_ne_zero ▸ this <| h' _ left_mem_uIcc
-        have := one_div_le (lt_of_lt_of_le zero_lt_one <| h' _ right_mem_uIcc) zero_lt_one |>.mpr
-        have hb2 := div_self (G₀ := ℝ) one_ne_zero ▸ this <| h' _ right_mem_uIcc
-        rcases le_or_gt 0 (-(1 / φ' b) + 1 / φ' a) with hab | hab
-        · rw [abs_of_nonneg hab]; linarith only [ha2, hb1]
-        · rw [abs_of_neg hab]; linarith only [ha1, hb2]
-      · have ha1 := div_nonpos_iff.mpr
-          (Or.inl ⟨zero_le_one,
-            le_trans (h' _ left_mem_uIcc) neg_one_lt_zero.le⟩)
-        have hb1 := div_nonpos_iff.mpr
-          (Or.inl ⟨zero_le_one,
-            le_trans (h' _ right_mem_uIcc) neg_one_lt_zero.le⟩)
-        have ha2 : -(1 / φ' a) ≤ 1 := by
-          simpa only [← neg_div] using div_le_one_of_ge (h' _ left_mem_uIcc)
-            <| le_trans (h' _ left_mem_uIcc) <| le_of_lt neg_one_lt_zero
-        have hb2 : -(1 / φ' b) ≤ 1 := by
-          simpa only [← neg_div] using div_le_one_of_ge (h' _ right_mem_uIcc)
-            <| le_trans (h' _ right_mem_uIcc) <| le_of_lt neg_one_lt_zero
-        rcases le_or_gt 0 (-(1 / φ' b) + 1 / φ' a) with hab | hab
-        · rw [abs_of_nonneg hab]; linarith only [ha1, hb2]
-        · rw [abs_of_neg hab]; linarith only [ha2, hb1]
+      have hrange :
+          (∀ x ∈ [[a, b]], -1 ≤ -(1 / φ' x) ∧ -(1 / φ' x) ≤ 0) ∨
+          (∀ x ∈ [[a, b]], 0 ≤ -(1 / φ' x) ∧ -(1 / φ' x) ≤ 1) := by
+        rcases h' with hpos | hneg
+        · left
+          intro x hx
+          have hnonneg := div_nonneg zero_le_one (le_trans zero_le_one <| hpos x hx)
+          have hle := (one_div_le (lt_of_lt_of_le zero_lt_one <| hpos x hx) zero_lt_one).mpr
+            (by simpa using hpos x hx)
+          constructor <;> linarith
+        · right
+          intro x hx
+          have hnonpos := div_nonpos_iff.mpr
+            (Or.inl ⟨zero_le_one, le_trans (hneg x hx) neg_one_lt_zero.le⟩)
+          have hle : -(1 / φ' x) ≤ 1 := by
+            simpa only [← neg_div] using div_le_one_of_ge (hneg x hx)
+              <| le_trans (hneg x hx) <| le_of_lt neg_one_lt_zero
+          constructor <;> linarith
+      rcases hrange with hrange | hrange <;>
+        have ha := hrange a left_mem_uIcc <;>
+        have hb := hrange b right_mem_uIcc <;>
+        rw [abs_le] <;> constructor <;> linarith
     · apply ContinuousOn.intervalIntegrable
       fun_prop (discharger := try { exact fun x hx ↦ by have := hφ'_nz hx; positivity })
     · fun_prop (discharger := exact fun x hx ↦ by have := hφ'_nz hx; positivity)
@@ -335,35 +293,33 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
     · convert this (by rwa [uIcc_comm]) (by rwa [uIcc_comm]) hba using 1
       rw [integral_symm, norm_neg]
   revert hk hL
-  intros hk hL
-  have hφc' := hφc.continuousOn_iteratedDerivWithin (m := k) (by rfl)
+  induction' k with k ih generalizing a b L φ
+  · intro hk
+    contradiction
+  intro hk hL
+  have hφc' := hφc.continuousOn_iteratedDerivWithin (m := k + 1) (by rfl)
     (uniqueDiffOn_Icc <| min_lt_max.mpr hab.ne)
-  wlog hφ' : ∀ x ∈ [[a, b]], 1 ≤ iteratedDerivWithin k φ [[a, b]] x generalizing φ L
-  · rcases hφc'.forall_le_or_forall_le_of_forall_le_abs hφ with _ | hφ'
+  wlog hφ' : ∀ x ∈ [[a, b]], 1 ≤ iteratedDerivWithin (k + 1) φ [[a, b]] x
+      generalizing φ L
+  · rcases forall_le_or_forall_le_of_forall_le_abs hφc' hφ with _ | hφ'
     · contradiction
-    have hφ'' : ∀ x ∈ [[a, b]], 1 ≤ iteratedDerivWithin k (-φ) [[a, b]] x := by
-      intro x hx
-      rw [iteratedDerivWithin_neg]
-      linarith only [hφ' x hx]
-    convert this hφc.neg ?_ (show -L ≠ 0 by simp [hL]) ?_ hφ'' using 3
+    convert this (φ := -φ) hφc.neg ?_ (show -L ≠ 0 by simp [hL]) ?_
+        (fun x hx ↦ by rw [iteratedDerivWithin_neg]; linarith only [hφ' x hx]) using 3
     · simp
     · simp
     · intro x hx
-      change 1 ≤ |iteratedDerivWithin k (-φ) [[a, b]] x|
-      rw [iteratedDerivWithin_neg, abs_neg]
-      exact hφ x hx
+      simpa [iteratedDerivWithin_neg] using hφ x hx
     · convert hφc'.neg using 2
       exact iteratedDerivWithin_neg _
   clear hφ
-  induction' k with k ih generalizing a b L φ
-  · contradiction
 
   let δ := |L| ^ (-(1 : ℝ) / (k + 1))
   have hφδc := hφc.const_smul δ⁻¹
 
-  obtain ⟨d, hd, hd'⟩ := (contDiffOn_nat_succ_iff_contDiffOn_one_iteratedDerivWithin
-    <| uniqueDiffOn_Icc <| min_lt_max.mpr hab.ne).mp hφc
-      |>.2.exists_le_abs_of_le_derivWithin (by rwa [iteratedDerivWithin_succ] at hφ')
+  obtain ⟨d, hd, hd'⟩ := exists_le_abs_of_le_derivWithin
+    ((contDiffOn_nat_succ_iff_contDiffOn_one_iteratedDerivWithin
+      <| uniqueDiffOn_Icc <| min_lt_max.mpr hab.ne).mp hφc |>.2)
+    (by rwa [iteratedDerivWithin_succ] at hφ')
 
   let c₁ := max a (d - δ)
   let c₂ := min b (d + δ)
@@ -376,8 +332,8 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
   have hδ : |c₂ - c₁| ≤ 2 * δ := by
     have h1 : c₁ ≤ d := max_le had (sub_le_self d hδ_nonneg)
     have h2 : d ≤ c₂ := le_min hdb (le_add_of_nonneg_right hδ_nonneg)
-    rw [abs_of_nonneg (by linarith)]
-    linarith [min_le_right b (d + δ), le_max_right a (d - δ)]
+    rw [abs_of_nonneg (by linarith only [h1, h2])]
+    linarith only [min_le_right b (d + δ), le_max_right a (d - δ)]
 
   have hc₁_mem : c₁ ∈ [[a, b]] :=
     ⟨le_trans (min_le_left a b) (le_max_left a (d - δ)),
@@ -385,7 +341,7 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
   have hc₂_mem : c₂ ∈ [[a, b]] :=
     ⟨le_min (min_le_right a b) (le_trans hd.1 (le_add_of_nonneg_right hδ_nonneg)),
      le_trans (min_le_left b (d + δ)) (le_max_right a b)⟩
-  have hac₁: [[a, c₁]] ⊆ [[a, b]] := uIcc_subset_uIcc left_mem_uIcc hc₁_mem
+  have hac₁ : [[a, c₁]] ⊆ [[a, b]] := uIcc_subset_uIcc left_mem_uIcc hc₁_mem
   have hc₁b : [[c₁, b]] ⊆ [[a, b]] := uIcc_subset_uIcc hc₁_mem right_mem_uIcc
   have hc₁c₂ : [[c₁, c₂]] ⊆ [[a, b]] := uIcc_subset_uIcc hc₁_mem hc₂_mem
   have hc₂b : [[c₂, b]] ⊆ [[a, b]] := uIcc_subset_uIcc hc₂_mem right_mem_uIcc
@@ -439,8 +395,8 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
     have hLδ_eq : |δ * L| ^ (-(1 : ℝ) / ↑k) = (|L| * δ) ^ (-(1 : ℝ) / ↑k) := by
       rw [abs_mul, abs_of_pos hδ_pos, mul_comm]
     rcases eq_or_lt_of_le hk with rfl | hk'
-    · have deq1 : ∀ z ∈ [[α, β]], derivWithin φ [[α, β]] z = derivWithin φ [[a, b]] z := by
-        intro z hz; have := deriv_eq z hz; simp only [iteratedDerivWithin_one] at this; exact this
+    · have deq1 : ∀ z ∈ [[α, β]], derivWithin φ [[α, β]] z = derivWithin φ [[a, b]] z :=
+        fun z hz ↦ by simpa only [iteratedDerivWithin_one] using deriv_eq z hz
       have hmono : MonotoneOn (derivWithin (δ⁻¹ • φ) [[α, β]]) [[α, β]] := by
         intro x hx y hy hxy
         simp only [derivWithin_const_smul_field, smul_eq_mul]
@@ -448,8 +404,8 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
         rw [deq1 x hx, deq1 y hy]
         exact hmono_ab rfl (hαβ hx) (hαβ hy) hxy
       calc _ ≤ c 1 * |δ * L|⁻¹ := norm_integral_exp_mul_I_le_of_order_one'
-              (hφδc.mono hαβ) (fun x hx ↦ by
-                have := hψ_bd x hx; simp only [iteratedDerivWithin_one] at this; exact this)
+              (hφδc.mono hαβ)
+              (fun x hx ↦ by simpa only [iteratedDerivWithin_one] using hψ_bd x hx)
               hmono hδL_ne
         _ = _ := by
           congr 1; rw [abs_mul, abs_of_pos hδ_pos, mul_comm δ |L|,
@@ -457,40 +413,17 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
             show -(1 : ℝ) = ((-1 : ℤ) : ℝ) by norm_num, Real.rpow_intCast, zpow_neg_one]
     · have hψc : ContDiffOn ℝ (k : ℕ∞) (δ⁻¹ • φ) [[α, β]] :=
         (hφδc.mono hαβ).of_le (by exact_mod_cast Nat.le_succ k)
-      have hψc' : ContinuousOn (iteratedDerivWithin k (δ⁻¹ • φ) [[α, β]]) [[α, β]] :=
-        hψc.continuousOn_iteratedDerivWithin (by rfl) hud_αβ
-      rcases hψc'.forall_le_or_forall_le_of_forall_le_abs hψ_bd with hψ_sgn | hψ_sgn
-      · rcases lt_or_gt_of_ne hαβ' with hlt | hlt
-        · exact hLδ_eq ▸ ih hlt hk' hψc hδL_ne hψc' hψ_sgn
-        · rw [integral_symm, norm_neg]
-          exact hLδ_eq ▸ ih hlt hk' (by rwa [uIcc_comm]) hδL_ne
-            (by rwa [uIcc_comm]) (by rwa [uIcc_comm])
-      · have neg_eq (x : ℝ) : cexp (↑(δ * L) * ↑((δ⁻¹ • φ) x) * I) =
-            cexp (↑(-(δ * L)) * ↑((-(δ⁻¹ • φ)) x) * I) := by
-          simp [Pi.neg_apply, neg_mul, neg_neg]
-        simp_rw [neg_eq]
-        have hconv : |-(δ * L)| ^ (-(1 : ℝ) / ↑k) = (|L| * δ) ^ (-(1 : ℝ) / ↑k) := by
-          rw [abs_neg]; exact hLδ_eq
-        have hψ_neg_pos : ∀ x ∈ [[α, β]],
-            1 ≤ iteratedDerivWithin k (-(δ⁻¹ • φ)) [[α, β]] x := by
-          intro x hx; rw [iteratedDerivWithin_neg]; linarith [hψ_sgn x hx]
-        have hψc_neg := hψc.neg
-        have hψc'_neg : ContinuousOn (iteratedDerivWithin k (-(δ⁻¹ • φ)) [[α, β]]) [[α, β]] := by
-          convert hψc'.neg using 2; exact iteratedDerivWithin_neg _
-        rcases lt_or_gt_of_ne hαβ' with hlt | hlt
-        · exact hconv ▸ ih hlt hk' hψc_neg (neg_ne_zero.mpr hδL_ne) hψc'_neg hψ_neg_pos
-        · rw [integral_symm, norm_neg]
-          exact hconv ▸ ih hlt hk' (by rwa [uIcc_comm]) (neg_ne_zero.mpr hδL_ne)
-            (by rwa [uIcc_comm]) (by rwa [uIcc_comm])
-
+      rcases lt_or_gt_of_ne hαβ' with hlt | hlt
+      · exact hLδ_eq ▸ ih hψc hψ_bd hlt hk' hδL_ne
+      · rw [integral_symm, norm_neg]
+        exact hLδ_eq ▸ ih (by rwa [uIcc_comm]) (by rwa [uIcc_comm]) hlt hk' hδL_ne
 
   have hest_sub {α β : ℝ} (hαβ : [[α, β]] ⊆ [[a, b]])
       (hle : ∀ x ∈ [[α, β]], δ ≤ |x - d|) :
       ∀ x ∈ [[α, β]], δ ≤ |iteratedDerivWithin k φ [[a, b]] x| := by
     intro x hx
     refine le_trans (hle x hx) ?_
-    rw [uIcc_of_le hab.le]
-    exact hd' x (hαβ hx)
+    simpa [uIcc_of_le hab.le] using hd' x (hαβ hx)
 
   have := hφc.continuousOn
 
@@ -505,13 +438,12 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
     (ContinuousOn.intervalIntegrable <| ContinuousOn.mono hf hc₂b)]
 
   have hLδ : (|L| * δ) ^ (-(1 : ℝ) / k) = δ := by
-      simp only [δ]
-      rw [Real.mul_rpow (by positivity) (by positivity),
-          ← Real.rpow_mul (by positivity),
-          ← Real.rpow_add (by positivity)]
-      congr
-      field_simp
-      simp
+    simp only [δ]
+    rw [Real.mul_rpow (by positivity) (by positivity), ← Real.rpow_mul (by positivity),
+      ← Real.rpow_add (by positivity)]
+    congr
+    field_simp
+    simp
 
   have hac₁_est : a ≠ c₁ → ∀ x ∈ [[a, c₁]], δ ≤ |x - d| := by
     intro hne x hx
@@ -542,14 +474,12 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
         · exact haux hac₁ fun hne ↦ hest_sub hac₁ (hac₁_est hne)
         · apply le_trans (norm_integral_le_of_norm_le_const fun x _ ↦ by
             show ‖f x‖ ≤ 1; unfold f; norm_cast; exact le_of_eq <| norm_exp_ofReal_mul_I _)
-          rw [one_mul]; exact hδ
+          simpa using hδ
         · exact haux hc₂b fun hne ↦ hest_sub hc₂b (hc₂b_est hne)
       _ = _ := by
-        rw [hLδ]
         push_cast
-        rw [show |L| ^ (-(1 : ℝ) / (↑k + 1)) = δ by rfl, ← c_rec hk]
+        rw [hLδ, show |L| ^ (-(1 : ℝ) / (↑k + 1)) = δ by rfl, ← c_rec hk]
         ring
-
 
 end SpecialCase
 
@@ -568,7 +498,8 @@ private theorem norm_integral_exp_mul_I_smul_le_of_norm_integral_exp_mul_I {A : 
       A * (‖ψ b‖ + |∫ x in a..b, ‖derivWithin ψ [[a, b]] x‖|) := by
   by_cases hab : a = b
   · simp [hab]; positivity
-  have hψ'_cont := hψ.continuousOn_derivWithin (uniqueDiffOn_Icc <| min_lt_max.mpr hab) (by norm_num)
+  have hψ'_cont := hψ.continuousOn_derivWithin (uniqueDiffOn_Icc <| min_lt_max.mpr hab)
+    (by norm_num)
 
   let F := fun x ↦ ∫ t in a..x, exp (L * φ t * I)
   let F' := fun x ↦ exp (L * φ x * I)
@@ -583,7 +514,8 @@ private theorem norm_integral_exp_mul_I_smul_le_of_norm_integral_exp_mul_I {A : 
     intro x hx
     have := FTCFilter.nhdsUIcc (h := ⟨hx⟩)
     apply integral_hasDerivWithinAt_right (t := [[a, b]])
-    · exact ContinuousOn.intervalIntegrable <| ContinuousOn.mono cont_F' <| uIcc_subset_uIcc_left hx
+    · exact ContinuousOn.intervalIntegrable <| ContinuousOn.mono cont_F'
+        <| uIcc_subset_uIcc_left hx
     · apply ContinuousOn.stronglyMeasurableAtFilter_nhdsWithin cont_F' measurableSet_uIcc
     · exact ContinuousOn.continuousWithinAt cont_F' hx
 
@@ -605,7 +537,7 @@ private theorem norm_integral_exp_mul_I_smul_le_of_norm_integral_exp_mul_I {A : 
     _ ≤ A * ‖ψ b‖ + A * |∫ x in a..b, ‖ψ' x‖| := by
       gcongr
       · exact hest _ right_mem_uIcc
-      · rw [integral_const_mul, abs_mul, abs_of_pos hA]
+      · simp [integral_const_mul, abs_of_pos hA]
     _ = _ := by ring
 
 /-- **Van der Corput's lemma** for vector-valued amplitude functions, first order case.
@@ -626,14 +558,12 @@ theorem norm_integral_exp_mul_I_le_of_order_one
   have hsubset := uIcc_subset_uIcc_left hx
   have haux : ∀ y ∈ [[a, x]], derivWithin φ [[a, x]] y = derivWithin φ [[a, b]] y := by
     intro y hy
-    have hsubset := uIcc_subset_uIcc_left hx
     have := uniqueDiffOn_Icc (min_lt_max.mpr hxa.symm) _ hy
     exact ((hφ.contDiffWithinAt <| hsubset hy).differentiableWithinAt
       (by norm_num)).hasDerivWithinAt |>.mono hsubset |>.derivWithin this
-  refine norm_integral_exp_mul_I_le_of_order_one' ?contdiff ?deriv_est ?mono hL
-  case contdiff => exact hφ.mono hsubset
-  case deriv_est => exact fun y hy ↦ haux y hy ▸ h y (hsubset hy)
-  case mono => exact (hφ'_mono.mono hsubset).congr <| fun y hy ↦ (haux y hy).symm
+  exact norm_integral_exp_mul_I_le_of_order_one' (hφ.mono hsubset)
+    (fun y hy ↦ haux y hy ▸ h y (hsubset hy))
+    ((hφ'_mono.mono hsubset).congr <| fun y hy ↦ (haux y hy).symm) hL
 
 /-- **Van der Corput's lemma** for vector-valued amplitude functions, case `k ≥ 2`.
 For `k = 1` see `norm_integral_exp_mul_I_le_of_order_one`. -/
@@ -654,7 +584,8 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two {k : ℕ} (hk : 2 ≤ k)
   have hab : a ≠ b := by
     intro hab; rw [hab, uIcc_self] at hx
     exact hxa ((mem_singleton_iff.mp hx).trans hab.symm)
-  refine norm_integral_exp_mul_I_le_of_order_ge_two' hk (hφ.mono hsubset) (fun y hy ↦ ?deriv_est) hL
+  refine norm_integral_exp_mul_I_le_of_order_ge_two' hk (hφ.mono hsubset)
+    (fun y hy ↦ ?deriv_est) hL
   rw [show iteratedDerivWithin k φ [[a, x]] y = iteratedDerivWithin k φ [[a, b]] y by
     simp only [iteratedDerivWithin]; congr 1
     exact iteratedFDerivWithin_subset hsubset hud_ax
