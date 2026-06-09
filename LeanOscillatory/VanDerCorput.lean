@@ -28,11 +28,16 @@ in one real variable, following Stein.
 * `Oscillatory.norm_integral_exp_mul_I_le_of_order_one`:
   Vector-valued amplitude, first order case
 * `Oscillatory.norm_integral_exp_mul_I_le_of_order_one'`:
-  Scalar version, first order case
+  Scalar constant amplitude version, first order case
 * `Oscillatory.norm_integral_exp_mul_I_le_of_order_ge_two`:
   Vector-valued amplitude, higher-order case
 * `Oscillatory.norm_integral_exp_mul_I_le_of_order_ge_two'`:
-  Scalar version, higher-order case
+  Scalar constant amplitude version, higher-order case
+
+## Notes
+
+Following the standard argument, we first prove the constant amplitude cases
+and then extend to vector-valued versions.
 
 ## References
 
@@ -50,26 +55,24 @@ open intervalIntegral Interval
 
 namespace VanDerCorput
 
-/-- The constant appearing in van der Corput's lemma. -/
-abbrev c (k : ℕ) : ℝ := 5 * 2 ^ (k - 1) - 2
+/-- The constant appearing in van der Corput's lemma. Note: `c 0` is a junk value. -/
+protected abbrev c (k : ℕ) : ℝ := 5 * 2 ^ (k - 1) - 2
 
-theorem c_pos (k : ℕ) : 0 < c k := by
-  induction k with
-  | zero => norm_num
-  | succ k hk =>
-    norm_num
-    have h : (2 ^ k : ℝ) ≥ 1 := by exact_mod_cast Nat.one_le_pow k 2 (by norm_num)
-    have := mul_le_mul_of_nonneg_left h (by norm_num : 0 ≤ (5 : ℝ))
-    exact lt_of_lt_of_le (by norm_num : (2 : ℝ) < 5 * 1) this
+open VanDerCorput (c)
 
-theorem c_rec {k : ℕ} (hk : 1 ≤ k) : 2 * c k + 2 = c (k + 1) := by
+protected theorem c_rec {k : ℕ} (hk : k ≠ 0) : c (k + 1) = 2 * c k + 2 := by
   simp only [c, add_tsub_cancel_right]
-  conv_rhs => rw [show k = (k - 1) + 1 by omega, pow_succ]
+  conv_lhs => rw [show k = (k - 1) + 1 by lia]
   ring
+
+protected theorem c_pos : ∀ k : ℕ, 0 < c k
+| 0 => by norm_num
+| 1 => by norm_num
+| k + 2 => by rw [VanDerCorput.c_rec (by lia)]; positivity [VanDerCorput.c_pos (k + 1)]
 
 end VanDerCorput
 
-open VanDerCorput
+open VanDerCorput (c c_pos c_rec)
 
 variable {a b : ℝ} {L : ℝ}
 variable {φ : ℝ → ℝ}
@@ -95,21 +98,18 @@ private theorem exists_le_abs_of_le_derivWithin
   by_cases hab : a = b
   · exact ⟨a, left_mem_uIcc, fun x hx ↦ by
       subst hab; rw [uIcc_self] at hx; simp [mem_singleton_iff.mp hx]⟩
+  have hφ' := hφ.continuousOn
+  have hφ'' := hφ.differentiableOn one_ne_zero
   have hud : UniqueDiffOn ℝ [[a, b]] := uniqueDiffOn_Icc (min_lt_max.mpr hab)
   have hmvt : ∀ x ∈ [[a, b]], ∀ y ∈ [[a, b]], x ≤ y → y - x ≤ φ y - φ x := by
-    have hg : MonotoneOn (fun x ↦ φ x - x) [[a, b]] := by
-      apply monotoneOn_of_deriv_nonneg (convex_uIcc (r := a) (s := b))
-        (hφ.continuousOn.sub continuousOn_id)
-        ((hφ.differentiableOn (by norm_num)).sub differentiableOn_id |>.mono interior_subset)
-      intro x hx
-      have hx' := interior_subset hx
-      have hda : DifferentiableAt ℝ φ x :=
-        ((hφ.differentiableOn (by norm_num)) x hx').differentiableAt
-          (Filter.mem_of_superset (isOpen_interior.mem_nhds hx) interior_subset)
-      change 0 ≤ deriv (φ - id) x
-      rw [deriv_sub hda differentiableAt_id, deriv_id', ← hda.derivWithin (hud x hx')]
-      linarith only [h x hx']
-    intro x hx y hy hxy; linarith only [hg hx hy hxy]
+    suffices hg : MonotoneOn (fun x ↦ φ x - x) [[a, b]] by
+      intro x hx y hy hxy; linarith only [hg hx hy hxy]
+    have := hφ''.mono interior_subset
+    refine monotoneOn_of_deriv_nonneg (convex_uIcc ..) (by fun_prop) (by fun_prop) fun x hx ↦ ?_
+    have hdx := this.differentiableAt <| isOpen_interior.mem_nhds hx
+    have hx' := interior_subset hx
+    rw [deriv_fun_sub hdx (by fun_prop), deriv_id'', ← hdx.derivWithin (hud x hx')]
+    linarith only [h x hx']
   have hmin_mem : min a b ∈ [[a, b]] := ⟨le_rfl, min_le_max⟩
   have hmax_mem : max a b ∈ [[a, b]] := ⟨min_le_max, le_rfl⟩
   rcases le_or_gt 0 (φ (min a b)) with hmin | hmin
@@ -446,7 +446,7 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
         · exact haux hc₂b fun hne ↦ hest_sub hc₂b (hc₂b_est hne)
       _ = _ := by
         push_cast
-        rw [hLδ, show |L| ^ (-(1 : ℝ) / (↑k + 1)) = δ by rfl, ← c_rec hk]
+        rw [hLδ, show |L| ^ (-(1 : ℝ) / (↑k + 1)) = δ by rfl, c_rec <|ne_zero_of_lt hk]
         ring
 
 end SpecialCase
