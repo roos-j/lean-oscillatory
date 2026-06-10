@@ -40,7 +40,7 @@ in one real variable, following Stein.
 ## Notes
 
 Following the standard argument, we first prove the constant amplitude cases
-and then extend to vector-valued versions.
+and then extend to arbitrary amplitudes.
 
 ## References
 
