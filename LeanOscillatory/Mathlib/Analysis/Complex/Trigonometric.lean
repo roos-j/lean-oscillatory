@@ -11,7 +11,7 @@ namespace Complex
 
 variable (x y : ℂ)
 
-theorem conj_exp_mul_I (x : ℝ) : conj (exp (x * I)) = exp (-(x * I)) := by simp [← exp_conj]
+theorem conj_exp_ofReal_mul_I (x : ℝ) : conj (exp (x * I)) = exp (-(x * I)) := by simp [← exp_conj]
 
 end Complex
 
