@@ -1,3 +1,4 @@
 /.lake
 Test.lean
 .vscode
+Issues.lean
