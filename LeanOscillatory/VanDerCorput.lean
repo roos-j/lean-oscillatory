@@ -6,7 +6,7 @@ Authors: Joris Roos, Manasa Praveen
 module
 
 public import LeanOscillatory.Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
-public import LeanOscillatory.Mathlib.Analysis.Complex.Exponential
+public import LeanOscillatory.Mathlib.Analysis.Complex.Trigonometric
 
 public import Mathlib.Analysis.Calculus.IteratedDeriv.Defs
 public import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
@@ -53,8 +53,8 @@ and then extend to vector-valued versions.
 
 namespace Oscillatory
 
-open Set Complex NNReal Function ComplexConjugate
-open intervalIntegral Interval
+open Set Complex NNReal Function intervalIntegral Interval
+open scoped ComplexConjugate
 
 namespace VanDerCorput
 

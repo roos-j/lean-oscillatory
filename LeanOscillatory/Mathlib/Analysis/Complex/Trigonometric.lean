@@ -1,6 +1,6 @@
 module
 
-public import Mathlib.Analysis.Complex.Exponential
+public import Mathlib.Analysis.Complex.Trigonometric
 
 @[expose] public section
 
@@ -11,8 +11,7 @@ namespace Complex
 
 variable (x y : ℂ)
 
-theorem conj_exp_mul_I (x : ℝ) : conj (exp (x * I)) = exp (-(x * I)) := by
-  sorry
+theorem conj_exp_mul_I (x : ℝ) : conj (exp (x * I)) = exp (-(x * I)) := by simp [← exp_conj]
 
 end Complex
 
