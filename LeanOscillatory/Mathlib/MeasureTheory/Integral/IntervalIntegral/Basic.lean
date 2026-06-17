@@ -26,17 +26,17 @@ variable [NormedAddCommGroup F] [NormedSpace 𝕜 E] [NormedSpace 𝕜 F]
 
 variable [NormedSpace ℝ F] [NormedSpace ℝ E] [CompleteSpace E] [CompleteSpace F]
 
--- Missing analogue of `LinearIsometry.integral_comp_comm`
-theorem _root_.LinearIsometry.intervalIntegral_comp_comm (L : E →ₗᵢ[𝕜] F) (f : ℝ → E) :
-    ∫ x in a..b, L (f x) ∂μ = L (∫ x in a..b, f x ∂μ) := by
-  simp_rw [intervalIntegral, L.integral_comp_comm, L.map_sub]
+-- -- Missing analogue of `LinearIsometry.integral_comp_comm`
+-- theorem _root_.LinearIsometry.intervalIntegral_comp_comm (L : E →ₗᵢ[𝕜] F) (f : ℝ → E) :
+--     ∫ x in a..b, L (f x) ∂μ = L (∫ x in a..b, f x ∂μ) := by
+--   simp_rw [intervalIntegral, L.integral_comp_comm, L.map_sub]
 
 end LinearIsometry
 
--- Missing analogue of `integral_conj`
-open scoped ComplexConjugate in
-theorem intervalIntegral_conj : ∫ x in a..b, conj (f x) ∂μ = conj (∫ x in a..b, f x ∂μ) :=
-  RCLike.conjLIE.toLinearIsometry.intervalIntegral_comp_comm f
+-- -- Missing analogue of `integral_conj`
+-- open scoped ComplexConjugate in
+-- theorem intervalIntegral_conj : ∫ x in a..b, conj (f x) ∂μ = conj (∫ x in a..b, f x ∂μ) :=
+--   RCLike.conjLIE.toLinearIsometry.intervalIntegral_comp_comm f
 
 end RCLike
 
