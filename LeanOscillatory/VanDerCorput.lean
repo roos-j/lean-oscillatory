@@ -336,8 +336,7 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
               hmono (by positivity)
         _ = _ := by norm_num [rpow_neg_one]
     · -- This is the `k ≥ 2` case: use inductive hypothesis
-      have hψc : ContDiffOn ℝ (k : ℕ∞) φ [[α, β]] :=
-        (hφc.mono hαβ).of_le (by exact_mod_cast Nat.le_succ k)
+      have hψc : ContDiffOn ℝ (k : ℕ∞) φ [[α, β]] := (hφc.mono hαβ).of_le (by norm_cast; simp)
       rcases lt_or_gt_of_ne hαβ' with h | h
       · simpa [mul_comm] using ih hψc hψ_bd h hk' (by positivity)
       · rw [integral_symm, norm_neg]
@@ -373,21 +372,14 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
     (ContinuousOn.intervalIntegrable <| .mono hf hc₂b)]
   calc
     _ ≤ ‖∫ x in a..c₁, exp (φ x * I)‖ + ‖∫ x in c₁..c₂, exp (φ x * I)‖ +
-        ‖∫ x in c₂..b, exp (φ x * I)‖ := le_trans (norm_add_le ..) <| by
-        rw [add_assoc]
-        gcongr
-        exact norm_add_le ..
+        ‖∫ x in c₂..b, exp (φ x * I)‖ := by grind only [add_assoc, norm_add_le]
     _ ≤ c k * (L * δ) ^ (-(1 : ℝ) / k) + 2 * δ + c k * (L * δ) ^ (-(1 : ℝ) / k) := by
       gcongr
       · exact haux hac₁ fun hne ↦ hest_sub hac₁ (hac₁_est hne)
-      · apply le_trans (norm_integral_le_of_norm_le_const fun x _ ↦ by
-          exact le_of_eq <| norm_exp_ofReal_mul_I _)
-        simpa using hδ
+      · exact le_trans (norm_integral_le_of_norm_le_const fun x _ ↦
+          le_of_eq <| norm_exp_ofReal_mul_I _) (by simpa using hδ)
       · exact haux hc₂b fun hne ↦ hest_sub hc₂b (hc₂b_est hne)
-    _ = _ := by
-      push_cast
-      rw [hLδ, show L ^ (-(1 : ℝ) / (↑k + 1)) = δ by rfl, c_rec <|ne_zero_of_lt hk]
-      ring
+    _ = _ := by grind only [c_rec <|ne_zero_of_lt hk]
 
 end SpecialCase
 
