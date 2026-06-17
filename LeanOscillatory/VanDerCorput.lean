@@ -82,7 +82,6 @@ variable {a b : ℝ} {L : ℝ}
 variable {φ : ℝ → ℝ}
 variable {k : ℕ}
 
-
 section GeneralLemma
 
 variable {α β: Type*}
@@ -112,58 +111,46 @@ private theorem exists_le_abs_of_le_derivWithin
     ∃ c ∈ [[a, b]], ∀ x ∈ [[a, b]], L * |x - c| ≤ |φ x| := by
   obtain (rfl | hab) := eq_or_ne a b
   · simp
-  wlog hL1 : L = 1 generalizing φ L
-  · obtain ⟨c, hc, hc'⟩ := this (L := 1) (φ := L⁻¹ • φ) (by norm_num) (hφ.const_smul L⁻¹)
-      (fun x hx ↦ by
-        have : 1 ≤ L⁻¹ * derivWithin φ [[a, b]] x := by field_simp [hL.ne']; linarith [h x hx]
-        simpa [smul_eq_mul, derivWithin_const_smul_field] using this)
-      rfl
-    refine ⟨c, hc, fun x hx ↦ ?_⟩
-    calc
-      L * |x - c| ≤ L * |(L⁻¹ • φ) x| := mul_le_mul_of_nonneg_left (by simpa using hc' x hx) hL.le
-      _ = |φ x| := by simp [smul_eq_mul, abs_mul, abs_inv, abs_of_pos hL, hL.ne']
-  subst hL1
   have hφ' := hφ.continuousOn
   have hφ'' := hφ.differentiableOn one_ne_zero
   have hud := uniqueDiffOn_uIcc hab
-  have hmvt : ∀ x ∈ [[a, b]], ∀ y ∈ [[a, b]], x ≤ y → y - x ≤ φ y - φ x := by
-    suffices hg : MonotoneOn (fun x ↦ φ x - x) [[a, b]] by
+  have hmvt : ∀ x ∈ [[a, b]], ∀ y ∈ [[a, b]], x ≤ y → L * (y - x) ≤ φ y - φ x := by
+    suffices hg : MonotoneOn (fun x ↦ φ x - L * x) [[a, b]] by
       intro x hx y hy hxy; linarith only [hg hx hy hxy]
     have := hφ''.mono interior_subset
     refine monotoneOn_of_deriv_nonneg (convex_uIcc ..) (by fun_prop) (by fun_prop) fun x hx ↦ ?_
     have hdx := this.differentiableAt <| isOpen_interior.mem_nhds hx
     have hx' := interior_subset hx
-    rw [deriv_fun_sub hdx (by fun_prop), deriv_id'', ← hdx.derivWithin (hud x hx')]
-    linarith only [h x hx']
-  have hmin_mem : min a b ∈ [[a, b]] := ⟨le_rfl, min_le_max⟩
-  have hmax_mem : max a b ∈ [[a, b]] := ⟨min_le_max, le_rfl⟩
-  -- Three cases according to whether `φ` has a zero, or is pos./neg. everywhere.
-  -- Note `c` is just the argmin of `|φ x|`.
-  rcases le_or_gt 0 (φ (min a b)) with hmin | hmin
-  · refine ⟨min a b, hmin_mem, fun x hx ↦ ?_⟩
-    rw [abs_of_nonneg (sub_nonneg.mpr hx.1),
-      abs_of_nonneg (le_trans hmin (by linarith only [hmvt _ hmin_mem _ hx hx.1, hx.1]))]
-    linarith [hmvt _ hmin_mem _ hx hx.1, hx.1]
-  · rcases le_or_gt (φ (max a b)) 0 with hmax | hmax
-    · refine ⟨max a b, hmax_mem, fun x hx ↦ ?_⟩
-      rw [abs_of_nonpos (sub_nonpos.mpr hx.2),
-        abs_of_nonpos (le_trans (by linarith only [hmvt _ hx _ hmax_mem hx.2, hx.2]) hmax)]
-      linarith [hmvt _ hx _ hmax_mem hx.2, hx.2]
-    · have h0 : (0 : ℝ) ∈ [[φ (min a b), φ (max a b)]] := by
-        rw [uIcc_of_le <| le_of_lt <| lt_trans hmin hmax]
-        exact ⟨hmin.le, hmax.le⟩
-      obtain ⟨c, hc, hfc⟩ := intermediate_value_uIcc
-        (hφ.continuousOn.mono (uIcc_subset_uIcc hmin_mem hmax_mem)) h0
-      have hc' : c ∈ [[a, b]] := uIcc_subset_uIcc hmin_mem hmax_mem hc
-      refine ⟨c, hc', fun x hx ↦ ?_⟩
-      rw [(show |φ x| = |φ x - φ c| by rw [hfc, sub_zero])]
-      rcases le_or_gt c x with hle | hlt
-      · rw [abs_of_nonneg (sub_nonneg.mpr hle), abs_of_nonneg
-          (by linarith only [hmvt _ hc' _ hx hle, hle])]
-        linarith only [hmvt _ hc' _ hx hle]
-      · rw [abs_of_neg (sub_neg.mpr hlt), abs_of_nonpos
-          (by linarith only [hmvt _ hx _ hc' hlt.le, hlt])]
-        linarith only [hmvt _ hx _ hc' hlt.le]
+    rw [deriv_fun_sub hdx (by fun_prop), deriv_const_mul L differentiableAt_fun_id,
+      deriv_id'', ← hdx.derivWithin (hud x hx')]
+    simpa using h x hx'
+  have hmon : MonotoneOn φ [[a, b]] := fun x hx y hy hxy ↦
+    le_add_neg_iff_le.mp <| le_trans (by positivity) <| hmvt _ hx _ hy hxy
+  have hmin : min a b ∈ [[a, b]] := ⟨le_rfl, min_le_max⟩
+  have hmax : max a b ∈ [[a, b]] := ⟨min_le_max, le_rfl⟩
+  -- If `φ` is non-neg. at left endpoint, take `c` to be left endpoint
+  rcases le_or_gt 0 (φ (min a b)) with hm | hm
+  · refine ⟨min a b, hmin, fun x hx ↦ ?_⟩
+    rw [abs_of_nonneg (sub_nonneg.mpr hx.1), abs_of_nonneg (le_trans hm <| hmon hmin hx hx.1)]
+    linarith [hmvt _ hmin _ hx hx.1, hx.1]
+  -- If `φ` is non-pos. at right endpoint, take `c` to be right endpoint
+  rcases le_or_gt (φ (max a b)) 0 with hM | hM
+  · refine ⟨max a b, hmax, fun x hx ↦ ?_⟩
+    rw [abs_of_nonpos (sub_nonpos.mpr hx.2), abs_of_nonpos (le_trans (hmon hx hmax hx.2) hM)]
+    linarith [hmvt _ hx _ hmax hx.2, hx.2]
+  -- Otherwise, `φ` has a zero. Take `c` so that `φ c = 0`
+  have h0 : 0 ∈ [[φ (min a b), φ (max a b)]] := by grind [uIcc_of_le <| le_of_lt <| lt_trans hm hM]
+  obtain ⟨c, hc, hfc⟩ := intermediate_value_uIcc
+    (hφ.continuousOn.mono (uIcc_subset_uIcc hmin hmax)) h0
+  have hc' := uIcc_subset_uIcc hmin hmax hc
+  refine ⟨c, hc', fun x hx ↦ ?_⟩
+  rcases le_or_gt c x with h | h
+  · rw [abs_of_nonneg (sub_nonneg.mpr h), abs_of_nonneg
+      (by linarith only [hmon hc' hx h, hfc])]
+    linarith only [hmvt _ hc' _ hx h, hfc]
+  · rw [abs_of_neg (sub_neg.mpr h), abs_of_nonpos
+          (by linarith only [hmon hx hc' h.le, h, hfc])]
+    linarith only [hmvt _ hx _ hc' h.le, hfc]
 
 section SpecialCase
 
