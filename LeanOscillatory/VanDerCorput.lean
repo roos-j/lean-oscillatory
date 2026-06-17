@@ -5,8 +5,9 @@ Authors: Joris Roos, Manasa Praveen
 -/
 module
 
-public import LeanOscillatory.Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
+-- public import LeanOscillatory.Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 public import LeanOscillatory.Mathlib.Analysis.Complex.Trigonometric
+public import LeanOscillatory.Mathlib.Analysis.Calculus.TangentCone.Real
 
 public import Mathlib.Analysis.Calculus.IteratedDeriv.Defs
 public import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
@@ -81,32 +82,42 @@ variable {a b : ℝ} {L : ℝ}
 variable {φ : ℝ → ℝ}
 variable {k : ℕ}
 
-/-- Auxiliary: If `f` is continuous on `[a, b]` and `|f x| ≥ L > 0` for all `x ∈ [a, b]`,
-  then either `f x ≥ L` for all `x ∈ [a, b]` or `f x ≤ -L` for all `x ∈ [a, b]`. -/
-private theorem forall_le_or_forall_le_of_forall_le_abs {a b : ℝ}
-    {L : ℝ} (hL : 0 < L) {f : ℝ → ℝ} (hfcont : ContinuousOn f [[a, b]])
-    (hf : ∀ x ∈ [[a, b]], L ≤ |f x|) :
-    (∀ x ∈ [[a, b]], L ≤ f x) ∨ (∀ x ∈ [[a, b]], L ≤ -f x) := by
-  rcases isPreconnected_uIcc.mapsTo_Ioi_or_Iio (b := (0 : ℝ)) hfcont
-      (fun x hx h ↦ not_le_of_gt hL <| by simpa [h] using hf x hx) with hp | hn
-  · left; intro x hx
-    simpa [abs_of_nonneg (show 0 ≤ f x from (hp hx).le)] using hf x hx
-  · right; intro x hx
-    simpa [le_neg, abs_of_nonpos (show f x ≤ 0 from (hn hx).le)] using hf x hx
+
+section GeneralLemma
+
+variable {α β: Type*}
+variable [TopologicalSpace α] [LinearOrder β] [TopologicalSpace β] [OrderClosedTopology β]
+
+variable [Group β] [MulLeftMono β]
+
+-- Find correct file. `Topology/Connected/Basic.lean` does not import absolute value
+@[to_additive]
+theorem _root_.IsPreconnected.forall_le_or_forall_le_of_forall_le_mabs {s : Set α}
+    (hs : IsPreconnected s) {L : β} (hL : 1 < L) {f: α → β}
+    (hfcont: ContinuousOn f s) (hf : ∀ x ∈ s, L ≤ |f x|ₘ) :
+    (∀ x ∈ s, L ≤ f x) ∨ (∀ x ∈ s, L ≤ (f x)⁻¹) := by
+  obtain (h | h) := hs.mapsTo_Ioi_or_Iio (b := 1) hfcont (fun x hx h ↦
+    not_le_of_gt hL <| by simpa [mabs_one, h] using hf x hx)
+  · grind [MapsTo, mabs_of_one_lt]
+  · grind [MapsTo, mabs_of_lt_one]
+
+-- #find_home! IsPreconnected.forall_le_or_forall_le_of_forall_le_mabs
+
+end GeneralLemma
 
 /-- Auxiliary lemma used in the higher-order proof -/
 private theorem exists_le_abs_of_le_derivWithin
     {L : ℝ} (hL : 0 < L) (hφ : ContDiffOn ℝ 1 φ [[a, b]])
     (h : ∀ x ∈ [[a, b]], L ≤ derivWithin φ [[a, b]] x) :
     ∃ c ∈ [[a, b]], ∀ x ∈ [[a, b]], L * |x - c| ≤ |φ x| := by
-  by_cases hab : a = b
-  · exact ⟨a, left_mem_uIcc, fun x hx ↦ by
-      subst hab; rw [uIcc_self] at hx; simp [mem_singleton_iff.mp hx]⟩
+  obtain (rfl | hab) := eq_or_ne a b
+  · simp
   wlog hL1 : L = 1 generalizing φ L
   · obtain ⟨c, hc, hc'⟩ := this (L := 1) (φ := L⁻¹ • φ) (by norm_num) (hφ.const_smul L⁻¹)
       (fun x hx ↦ by
         have : 1 ≤ L⁻¹ * derivWithin φ [[a, b]] x := by field_simp [hL.ne']; linarith [h x hx]
-        simpa [smul_eq_mul, derivWithin_const_smul_field] using this) rfl
+        simpa [smul_eq_mul, derivWithin_const_smul_field] using this)
+      rfl
     refine ⟨c, hc, fun x hx ↦ ?_⟩
     calc
       L * |x - c| ≤ L * |(L⁻¹ • φ) x| := mul_le_mul_of_nonneg_left (by simpa using hc' x hx) hL.le
@@ -114,7 +125,7 @@ private theorem exists_le_abs_of_le_derivWithin
   subst hL1
   have hφ' := hφ.continuousOn
   have hφ'' := hφ.differentiableOn one_ne_zero
-  have hud : UniqueDiffOn ℝ [[a, b]] := uniqueDiffOn_Icc (min_lt_max.mpr hab)
+  have hud := uniqueDiffOn_uIcc hab
   have hmvt : ∀ x ∈ [[a, b]], ∀ y ∈ [[a, b]], x ≤ y → y - x ≤ φ y - φ x := by
     suffices hg : MonotoneOn (fun x ↦ φ x - x) [[a, b]] by
       intro x hx y hy hxy; linarith only [hg hx hy hxy]
@@ -164,21 +175,21 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
     ‖∫ x in a..b, exp (φ x * I)‖ ≤ c 1 * L⁻¹ := by
   wlog! hab : a ≠ b
   · simp only [hab, integral_same, norm_zero]; positivity
-  have hud_ab : UniqueDiffOn ℝ [[a, b]] := uniqueDiffOn_Icc <| min_lt_max.mpr hab
+  have hud := uniqueDiffOn_uIcc hab
   have := hφ.continuousOn
   let φ' := fun x ↦ derivWithin φ [[a, b]] x
   have hasDerivAt_φ : ∀ x ∈ [[a, b]], HasDerivWithinAt φ (φ' x) [[a, b]] x :=
     fun x hx ↦ ((hφ.contDiffWithinAt hx).differentiableWithinAt
       (by norm_num)).hasDerivWithinAt
-  have hφ'_cont := hφ.continuousOn_derivWithin hud_ab (by norm_num)
-  have h' := forall_le_or_forall_le_of_forall_le_abs hL hφ'_cont h
+  have hφ'_cont := hφ.continuousOn_derivWithin hud (by norm_num)
+  have h' := isPreconnected_uIcc.forall_le_or_forall_le_of_forall_le_abs hL hφ'_cont h
   let φ'' := fun x ↦ derivWithin φ' [[a, b]] x
   have hasDerivAt_φ' : ∀ x ∈ [[a, b]], HasDerivWithinAt φ' (φ'' x) [[a, b]] x :=
-    fun x hx ↦ (hφ.contDiffWithinAt hx).derivWithin (m := 1) hud_ab (by norm_num) hx |>
+    fun x hx ↦ (hφ.contDiffWithinAt hx).derivWithin (m := 1) hud (by norm_num) hx |>
       fun h ↦ (h.differentiableWithinAt <| by norm_num).hasDerivWithinAt
   have hφ''_cont : ContinuousOn φ'' [[a, b]] := by
     simpa [φ'', iteratedDerivWithin_succ, iteratedDerivWithin_one] using
-      hφ.continuousOn_iteratedDerivWithin (m := 2) (by norm_num) hud_ab
+      hφ.continuousOn_iteratedDerivWithin (m := 2) (by norm_num) hud
   -- The rough idea is just to integrate by parts to gain the factor `L⁻¹`.
   let u := fun x ↦ 1 / (φ' x * I)
   let v := fun x ↦ exp (φ x * I)
@@ -196,11 +207,8 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
       (.mul (.ofReal_comp <| hasDerivAt_φ' _ hx)
         (hasDerivWithinAt_const _ _ I)) (hnz1 hx) using 1
     · rfl
-    · funext; simp [u]
-    · have hφ0 : (φ' x : ℂ) ≠ 0 := by exact_mod_cast hφ'_nz hx
-      simp [u']
-      field_simp
-      simp [I_sq]
+    · rfl
+    · simp [mul_pow, u']
   have hasDerivAt_v : ∀ x ∈ [[a, b]], HasDerivWithinAt v (v' x) [[a, b]] x := by
     intro x hx
     convert HasDerivWithinAt.cexp (.mul (.ofReal_comp <| hasDerivAt_φ _ hx)
@@ -215,13 +223,7 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
     grind only
   -- The boundary terms are each bounded by `L⁻¹`
   have h2 {x : ℝ} (hx : x ∈ [[a, b]]) : ‖u x * v x‖ ≤ L⁻¹ := by
-    simp only [u, v, norm_mul, norm_div, norm_one]
-    norm_cast
-    rw [norm_exp_ofReal_mul_I]
-    have := norm_ne_zero_iff.mpr <| hφ'_nz hx
-    field_simp [φ', h x hx]
-    have := hφ'_norm hx
-    rwa [norm_I, mul_one]
+    simpa [u, v, field, hL.trans_le (h x hx), φ'] using h x hx
   -- We want to estimate the integral on RHS of `h1` **uniformly** in `a, b`.
   -- The idea is to use FTC and monotonicity. We require some groundwork first.
   have hasDerivAt_φ'_int : ∀ x ∈ uIoo a b, HasDerivWithinAt (fun x ↦ -1 / φ' x)
@@ -246,7 +248,9 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
     apply le_trans norm_integral_le_abs_integral_norm
     simp_rw [norm_mul, hv, mul_one]
     -- Discover integral of a derivative and use FTC.
-    rw [integral_congr hnorm_u'_eq, integral_eq_sub_of_hasDeriv_right ?_ hasDerivAt_φ'_int]
+    rw [integral_congr hnorm_u'_eq, integral_eq_sub_of_hasDeriv_right ?cont hasDerivAt_φ'_int ?int]
+    case int => exact ContinuousOn.intervalIntegrable <| by fun_prop (discharger := grind)
+    case cont => fun_prop (discharger := grind)
     · -- To get the right constant, want `≤ L⁻¹`, not `2 * L⁻¹` here,
       -- so we can't just use the triangle inequality.
       have : |-1 / φ' b - -1 / φ' a| = |1 / φ' b - 1 / φ' a| := by
@@ -270,9 +274,6 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
         have ha := hrange a left_mem_uIcc <;>
         have hb := hrange b right_mem_uIcc <;>
         rw [abs_le] <;> constructor <;> linarith only [ha, hb]
-    · apply ContinuousOn.intervalIntegrable
-      fun_prop (discharger := try { exact fun x hx ↦ by have := hφ'_nz hx; positivity })
-    · fun_prop (discharger := exact fun x hx ↦ by have := hφ'_nz hx; positivity)
   calc
     _ ≤ ‖∫ x in a..b, u' x * v x‖ + ‖u b * v b - u a * v a‖ := by
       rw [h1, sub_eq_neg_add]
@@ -303,10 +304,10 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
   | succ k ih =>
   intro hk hL
   have hφc' := hφc.continuousOn_iteratedDerivWithin (m := k + 1) (by rfl)
-    (uniqueDiffOn_Icc <| min_lt_max.mpr hab.ne)
+    (uniqueDiffOn_uIcc hab.ne)
   wlog hφ' : ∀ x ∈ [[a, b]], L ≤ iteratedDerivWithin (k + 1) φ [[a, b]] x
       generalizing φ L
-  · rcases forall_le_or_forall_le_of_forall_le_abs hL hφc' hφ with _ | hφ'
+  · rcases isPreconnected_uIcc.forall_le_or_forall_le_of_forall_le_abs hL hφc' hφ with _ | hφ'
     · contradiction
     convert this (φ := -φ) hφc.neg ?_ hL ?_
         (fun x hx ↦ by rw [iteratedDerivWithin_neg]; linarith only [hφ' x hx]) using 1
@@ -323,11 +324,10 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
   let δ := L ^ (-(1 : ℝ) / (k + 1))
   obtain ⟨d, hd, hd'⟩ := exists_le_abs_of_le_derivWithin (L := L) (hL := hL)
     ((contDiffOn_nat_succ_iff_contDiffOn_one_iteratedDerivWithin
-      <| uniqueDiffOn_Icc <| min_lt_max.mpr hab.ne).mp hφc |>.2)
+      <| uniqueDiffOn_uIcc hab.ne).mp hφc |>.2)
     (by rwa [iteratedDerivWithin_succ] at hφ')
   let c₁ := max a (d - δ)
   let c₂ := min b (d + δ)
-  rw [min_eq_left_of_lt hab, max_eq_right_of_lt hab] at hd'
   have hδ_pos : (0 : ℝ) < δ := by positivity
   have ⟨had, hdb⟩ : a ≤ d ∧ d ≤ b := by rwa [uIcc_of_le hab.le] at hd
   have hδ : |c₂ - c₁| ≤ 2 * δ := by
@@ -345,12 +345,12 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
   have hc₁b : [[c₁, b]] ⊆ [[a, b]] := uIcc_subset_uIcc hc₁_mem right_mem_uIcc
   have hc₁c₂ : [[c₁, c₂]] ⊆ [[a, b]] := uIcc_subset_uIcc hc₁_mem hc₂_mem
   have hc₂b : [[c₂, b]] ⊆ [[a, b]] := uIcc_subset_uIcc hc₂_mem right_mem_uIcc
-  have hud_ab : UniqueDiffOn ℝ [[a, b]] := uniqueDiffOn_Icc <| min_lt_max.mpr hab.ne
+  have hud := uniqueDiffOn_uIcc hab.ne
   replace hk : 1 ≤ k := by omega
   -- If `k = 1` we will need the monotonicity condition of the order one theorem.
   have hmono_ab (hk : k = 1) : MonotoneOn (derivWithin φ [[a, b]]) [[a, b]] := by
     subst hk
-    have hC1 := contDiffOn_nat_succ_iff_contDiffOn_one_iteratedDerivWithin hud_ab |>.mp hφc |>.2
+    have hC1 := contDiffOn_nat_succ_iff_contDiffOn_one_iteratedDerivWithin hud |>.mp hφc |>.2
     suffices MonotoneOn (iteratedDerivWithin 1 φ [[a, b]]) [[a, b]] by
       exact fun x hx y hy hxy ↦ by simpa [iteratedDerivWithin_one] using this hx hy hxy
     apply monotoneOn_of_deriv_nonneg (convex_uIcc (r := a) (s := b)) hC1.continuousOn
@@ -359,7 +359,7 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
     have hx' := interior_subset hx
     have hda := ((hC1.differentiableOn (by norm_num)) x hx').differentiableAt
       (Filter.mem_of_superset (isOpen_interior.mem_nhds hx) interior_subset)
-    rw [← hda.derivWithin (hud_ab x hx'), ← iteratedDerivWithin_succ]
+    rw [← hda.derivWithin (hud x hx'), ← iteratedDerivWithin_succ]
     exact le_trans hL.le <| hφ' x hx'
   -- This is the main estimate for the outer two pieces, unified to avoid duplication.
   have haux {α β : ℝ} (hαβ : [[α, β]] ⊆ [[a, b]])
@@ -367,11 +367,11 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
       ‖∫ x in α..β, exp (φ x * I)‖ ≤ c k * (L * δ) ^ (-(1 : ℝ) / k) := by
     by_cases hαβ' : α = β
     · simp only [hαβ', integral_same, norm_zero]; have := c_pos k; positivity
-    have hud_αβ := uniqueDiffOn_Icc (min_lt_max.mpr hαβ')
+    have hud_αβ := uniqueDiffOn_uIcc hαβ'
     have deriv_eq (x : ℝ) (hx : x ∈ [[α, β]]) :
         iteratedDerivWithin k φ [[α, β]] x = iteratedDerivWithin k φ [[a, b]] x := by
       simp only [iteratedDerivWithin]; congr 1
-      exact iteratedFDerivWithin_subset hαβ hud_αβ hud_ab (hφc.of_le (by norm_cast; omega)) hx
+      exact iteratedFDerivWithin_subset hαβ hud_αβ hud (hφc.of_le (by norm_cast; omega)) hx
     have hψ_bd (x : ℝ) (hx : x ∈ [[α, β]]) :
         L * δ ≤ |iteratedDerivWithin k φ [[α, β]] x| := by
       simpa [deriv_eq x hx] using hest hαβ' x hx
@@ -471,8 +471,7 @@ private theorem norm_integral_exp_mul_I_smul_le_of_norm_integral_exp_mul_I {A : 
   by_cases hab : a = b
   · simp only [hab, integral_same, norm_zero, Std.le_refl, uIcc_of_le, Icc_self, abs_zero,
     add_zero]; positivity
-  have hψ'_cont := hψ.continuousOn_derivWithin (uniqueDiffOn_Icc <| min_lt_max.mpr hab)
-    (by norm_num)
+  have hψ'_cont := hψ.continuousOn_derivWithin (uniqueDiffOn_uIcc hab) (by norm_num)
   let F := fun x ↦ ∫ t in a..x, exp (φ t * I)
   let F' := fun x ↦ exp (φ x * I)
   let ψ' := fun x ↦ derivWithin ψ [[a, b]] x
@@ -526,9 +525,9 @@ theorem norm_integral_exp_mul_I_le_of_order_one
   have hsubset := uIcc_subset_uIcc_left hx
   have haux : ∀ y ∈ [[a, x]], derivWithin φ [[a, x]] y = derivWithin φ [[a, b]] y := by
     intro y hy
-    have := uniqueDiffOn_Icc (min_lt_max.mpr hxa.symm) _ hy
-    exact ((hφ.contDiffWithinAt <| hsubset hy).differentiableWithinAt
-      (by norm_num)).hasDerivWithinAt |>.mono hsubset |>.derivWithin this
+    refine ((hφ.contDiffWithinAt <| hsubset hy).differentiableWithinAt
+      (by norm_num)).hasDerivWithinAt |>.mono hsubset |>.derivWithin ?_
+    exact uniqueDiffOn_uIcc hxa.symm _ hy
   exact norm_integral_exp_mul_I_le_of_order_one' (hφ.mono hsubset)
     (fun y hy ↦ haux y hy ▸ h y (hsubset hy))
     ((hφ'_mono.mono hsubset).congr <| fun y hy ↦ (haux y hy).symm) hL
@@ -548,14 +547,13 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two {k : ℕ} (hk : 2 ≤ k)
   have hsubset := uIcc_subset_uIcc_left hx
   wlog hxa : x ≠ a
   · rw [not_not.mp hxa, integral_same, norm_zero]; have := c_pos k; positivity
-  have hud_ax : UniqueDiffOn ℝ [[a, x]] := uniqueDiffOn_Icc (min_lt_max.mpr (Ne.symm hxa))
+  have hud_ax := uniqueDiffOn_uIcc (Ne.symm hxa)
   have hab : a ≠ b := by rintro rfl; exact hxa (mem_singleton_iff.mp (by simpa using hx))
   refine norm_integral_exp_mul_I_le_of_order_ge_two' hk (hφ.mono hsubset)
     (fun y hy ↦ ?deriv_est) hL
   rw [show iteratedDerivWithin k φ [[a, x]] y = iteratedDerivWithin k φ [[a, b]] y by
     simp only [iteratedDerivWithin]; congr 1
-    exact iteratedFDerivWithin_subset hsubset hud_ax
-      (uniqueDiffOn_Icc (min_lt_max.mpr hab))
+    exact iteratedFDerivWithin_subset hsubset hud_ax (uniqueDiffOn_uIcc hab)
       (hφ.of_le (by norm_cast)) hy]
   exact h y (hsubset hy)
 
