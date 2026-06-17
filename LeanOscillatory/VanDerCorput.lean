@@ -205,18 +205,14 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
       (φ'' x / (φ' x) ^ 2) (Ioi x) x := fun x hx ↦ by
     have hx' := uIoo_subset_uIcc_self hx
     have := ((hasDerivAt_φ' x hx').mono uIoo_subset_uIcc_self).hasDerivAt <| isOpen_Ioo.mem_nhds hx
-    convert! HasDerivWithinAt.neg <| HasDerivWithinAt.inv'
-      this.hasDerivWithinAt (hφ'_nz hx') using 1
+    convert! HasDerivWithinAt.neg <| .inv' this.hasDerivWithinAt (hφ'_nz hx') using 1
     field_simp
   have hnorm_u'_eq : ∀ x ∈ [[a, b]], ‖u' x‖ = φ'' x / (φ' x) ^ 2 := fun x hx ↦ by
-    simp only [Complex.norm_div, Complex.norm_mul, norm_real,
-      norm_eq_abs, norm_I, mul_one, norm_pow, sq_abs, u']
-    rw [abs_of_nonneg <| hφ'_mono.derivWithin_nonneg (x := x)]
-  have hv {x : ℝ} : ‖v x‖ = 1 := by simp [v]
+    simp_all [u', φ'', φ', hφ'_mono.derivWithin_nonneg (x := x)]
   -- This is the key estimate, independent of `a, b`.
   have h3 : ‖∫ x in a..b, u' x * v x‖ ≤ L⁻¹ := by
     apply le_trans norm_integral_le_abs_integral_norm
-    simp_rw [norm_mul, hv, mul_one]
+    simp_rw [norm_mul, v, norm_exp_ofReal_mul_I, mul_one]
     -- Discover integral of a derivative and use FTC.
     rw [integral_congr hnorm_u'_eq, integral_eq_sub_of_hasDeriv_right ?cont hasDerivAt_φ'_int ?int]
     case int => exact ContinuousOn.intervalIntegrable <| by fun_prop (discharger := grind)
