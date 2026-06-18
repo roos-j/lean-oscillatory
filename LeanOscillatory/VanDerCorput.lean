@@ -177,9 +177,9 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
       hφ.continuousOn_iteratedDerivWithin (m := 2) (by norm_num) hud
   -- The rough idea is just to integrate by parts to gain the factor `L⁻¹`.
   let u := fun x ↦ (φ' x * I)⁻¹
-  let v := fun x ↦ exp (φ x * I)
+  let v := fun x ↦ 𝐞 (φ x)
   let u' := fun x ↦ (φ'' x) * I / (φ' x) ^ 2
-  let v' := fun x ↦ φ' x * I * exp (φ x * I)
+  let v' := fun x ↦ I * 𝐞 (φ x) * φ' x
   have hφ'_nz {x : ℝ} (hx : x ∈ [[a, b]]) : φ' x ≠ 0 := by grind
   have hnz1 {x : ℝ} (hx : x ∈ [[a, b]]) : φ' x * I ≠ 0 := by simp [hφ'_nz hx]
   have hnz2 {x : ℝ} (hx : x ∈ [[a, b]]) : ((φ' x) ^ 2 : ℂ) ≠ 0 := by simp [hφ'_nz hx]
@@ -188,15 +188,12 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
     convert! HasDerivWithinAt.inv' (.mul (.ofReal_comp <| hasDerivAt_φ' _ hx)
         (hasDerivWithinAt_const _ _ I)) (hnz1 hx) using 1
     simp [mul_pow, u']
-  have hasDerivAt_v : ∀ x ∈ [[a, b]], HasDerivWithinAt v (v' x) [[a, b]] x := fun x hx ↦ by
-    convert! HasDerivWithinAt.cexp (.mul (.ofReal_comp <| hasDerivAt_φ _ hx)
-      (hasDerivWithinAt_const _ _ I)) using 1
-    simp [v']; ring
-  have h1 : ∫ x in a..b, exp (φ x * I) = u b * v b - u a * v a - ∫ x in a..b, u' x * v x := by
-    suffices h'' : ∀ x ∈ [[a, b]], exp (φ x * I) = u x * v' x by
+  have hasDerivAt_v := fun x hx ↦ HasDerivWithinAt.expI (hasDerivAt_φ x hx)
+  have h1 : ∫ x in a..b, 𝐞 (φ x) = u b * v b - u a * v a - ∫ x in a..b, u' x * v x := by
+    suffices h'' : ∀ x ∈ [[a, b]], 𝐞 (φ x) = u x * v' x by
       rw [integral_congr h'']
       refine integral_mul_deriv_eq_deriv_mul_of_hasDerivWithinAt hasDerivAt_u hasDerivAt_v ?_ ?_
-        <;> exact ContinuousOn.intervalIntegrable (by fun_prop (discharger := assumption))
+        <;> exact ContinuousOn.intervalIntegrable (by fun_prop)
     grind only
   -- The boundary terms are each bounded by `L⁻¹`
   have h2 {x : ℝ} (hx : x ∈ [[a, b]]) : ‖u x * v x‖ ≤ L⁻¹ := by
@@ -214,7 +211,7 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
   -- This is the key estimate, independent of `a, b`.
   have h3 : ‖∫ x in a..b, u' x * v x‖ ≤ L⁻¹ := by
     apply le_trans norm_integral_le_abs_integral_norm
-    simp_rw [norm_mul, v, norm_exp_ofReal_mul_I, mul_one]
+    simp_rw [norm_mul, v, norm_expI, mul_one]
     -- Discover integral of a derivative and use FTC.
     rw [integral_congr hnorm_u'_eq, integral_eq_sub_of_hasDeriv_right ?cont hasDerivAt_φ'_int ?int]
     case int => exact ContinuousOn.intervalIntegrable <| by fun_prop (discharger := grind)
@@ -247,7 +244,7 @@ theorem norm_integral_exp_mul_I_le_of_order_one'
 theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
     (hφc : ContDiffOn ℝ k φ [[a, b]])
     (hφ : ∀ x ∈ [[a, b]], L ≤ |iteratedDerivWithin k φ [[a, b]] x|) (hL : 0 < L) :
-    ‖∫ x in a..b, exp (φ x * I)‖ ≤ c k * L ^ (-(1 : ℝ) / k) := by
+    ‖∫ x in a..b, 𝐞 (φ x)‖ ≤ c k * L ^ (-(1 : ℝ) / k) := by
   wlog! hab : a < b generalizing a b
   · rcases hab.eq_or_lt with rfl | hba
     · rw [integral_same, norm_zero]
@@ -268,8 +265,7 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
     · contradiction
     convert! this (φ := -φ) hφc.neg (by simpa) hL ?_
         (fun x hx ↦ by rw [iteratedDerivWithin_neg]; linarith only [hφ' x hx]) using 1
-    · simp_rw [Pi.neg_apply, ofReal_neg, neg_mul, ← conj_exp_ofReal_mul_I,
-        intervalIntegral_conj, norm_conj]
+    · simp_rw [Pi.neg_apply, ← conj_expI, intervalIntegral_conj, norm_conj]
     · convert hφc'.neg using 2
       exact iteratedDerivWithin_neg _
   -- Main idea: split the integral into three pieces: `[a, d - δ]`, `[d - δ, d + δ]`, `[d + δ, b]`
@@ -315,7 +311,7 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
   -- This is the main estimate for the outer two pieces, unified to avoid duplication.
   have haux {α β : ℝ} (hαβ : [[α, β]] ⊆ [[a, b]])
       (hest : α ≠ β → ∀ x ∈ [[α, β]], L * δ ≤ |iteratedDerivWithin k φ [[a, b]] x|) :
-      ‖∫ x in α..β, exp (φ x * I)‖ ≤ c k * (L * δ) ^ (-(1 : ℝ) / k) := by
+      ‖∫ x in α..β, 𝐞 (φ x)‖ ≤ c k * (L * δ) ^ (-(1 : ℝ) / k) := by
     by_cases hαβ' : α = β
     · simp only [hαβ', integral_same, norm_zero]; have := c_pos k; positivity
     have hud_αβ := uniqueDiffOn_uIcc hαβ'
@@ -350,7 +346,7 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
     have h1 : L * |x - d| ≤ |iteratedDerivWithin k φ [[a, b]] x| := by simpa using hd' x (hαβ hx)
     exact le_trans (by have := hle x hx; gcongr) h1
   have hφcont : ContinuousOn φ [[a, b]] := hφc.continuousOn
-  have hf : ContinuousOn (fun x : ℝ ↦ exp (φ x * I)) [[a, b]] := by fun_prop
+  have hf : ContinuousOn (fun x : ℝ ↦ 𝐞 (φ x)) [[a, b]] := by fun_prop
   have hLδ : (L * δ) ^ (-(1 : ℝ) / k) = δ := by
     rw [mul_rpow (by positivity) (by positivity), ← rpow_mul (by positivity),
       ← rpow_add (by positivity)]
@@ -373,8 +369,8 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two' {k : ℕ} (hk : 2 ≤ k)
     (ContinuousOn.intervalIntegrable <| .mono hf hc₁c₂)
     (ContinuousOn.intervalIntegrable <| .mono hf hc₂b)]
   calc
-    _ ≤ ‖∫ x in a..c₁, exp (φ x * I)‖ + ‖∫ x in c₁..c₂, exp (φ x * I)‖ +
-        ‖∫ x in c₂..b, exp (φ x * I)‖ := by grind only [add_assoc, norm_add_le]
+    _ ≤ ‖∫ x in a..c₁, 𝐞 (φ x)‖ + ‖∫ x in c₁..c₂, 𝐞 (φ x)‖ +
+        ‖∫ x in c₂..b, 𝐞 (φ x)‖ := by grind only [add_assoc, norm_add_le]
     _ ≤ c k * (L * δ) ^ (-(1 : ℝ) / k) + 2 * δ + c k * (L * δ) ^ (-(1 : ℝ) / k) := by
       gcongr
       · exact haux hac₁ fun hne ↦ hest_sub hac₁ (hac₁_est hne)
@@ -394,16 +390,16 @@ variable {ψ : ℝ → E}
 /-- Auxiliary lemma for proving vector-valued amplitude versions of Van der Corput's lemma
 from constant amplitude versions. -/
 private theorem norm_integral_exp_mul_I_smul_le_of_norm_integral_exp_mul_I {A : ℝ} (hA : 0 < A)
-    (hest : ∀ y ∈ [[a, b]], ‖∫ x in a..y, exp (φ x * I)‖ ≤ A)
+    (hest : ∀ y ∈ [[a, b]], ‖∫ x in a..y, 𝐞 (φ x)‖ ≤ A)
     (hφ_cont : ContinuousOn φ [[a, b]]) (hψ : ContDiffOn ℝ 1 ψ [[a, b]]) :
-    ‖∫ x in a..b, exp (φ x * I) • ψ x‖ ≤
+    ‖∫ x in a..b, 𝐞 (φ x) • ψ x‖ ≤
       A * (‖ψ b‖ + |∫ x in a..b, ‖derivWithin ψ [[a, b]] x‖|) := by
   by_cases hab : a = b
   · simp only [hab, integral_same, norm_zero, Std.le_refl, uIcc_of_le, Icc_self, abs_zero,
     add_zero]; positivity
   have hψ'_cont := hψ.continuousOn_derivWithin (uniqueDiffOn_uIcc hab) (by norm_num)
-  let F := fun x ↦ ∫ t in a..x, exp (φ t * I)
-  let F' := fun x ↦ exp (φ x * I)
+  let F := fun x ↦ ∫ t in a..x, 𝐞 (φ t)
+  let F' := fun x ↦ 𝐞 (φ x)
   let ψ' := fun x ↦ derivWithin ψ [[a, b]] x
   have hasDeriv_ψ := fun x (hx : x ∈ [[a, b]]) ↦
     (hψ.contDiffWithinAt hx).differentiableWithinAt (by norm_num) |>.hasDerivWithinAt
@@ -412,9 +408,8 @@ private theorem norm_integral_exp_mul_I_smul_le_of_norm_integral_exp_mul_I {A : 
     intro x hx
     have := FTCFilter.nhdsUIcc (h := ⟨hx⟩)
     apply integral_hasDerivWithinAt_right (t := [[a, b]])
-    · exact ContinuousOn.intervalIntegrable <| ContinuousOn.mono cont_F'
-        <| uIcc_subset_uIcc_left hx
-    · apply ContinuousOn.stronglyMeasurableAtFilter_nhdsWithin cont_F' measurableSet_uIcc
+    · exact ContinuousOn.intervalIntegrable <| cont_F'.mono <| uIcc_subset_uIcc_left hx
+    · apply cont_F'.stronglyMeasurableAtFilter_nhdsWithin measurableSet_uIcc
     · exact ContinuousOn.continuousWithinAt cont_F' hx
   have h1 : ∫ x in a..b, F x • ψ' x = F b • ψ b - F a • ψ a - ∫ x in a..b, F' x • ψ x := by
     apply integral_smul_deriv_eq_deriv_smul_of_hasDerivWithinAt hasDeriv_F hasDeriv_ψ
@@ -444,7 +439,7 @@ theorem norm_integral_exp_mul_I_le_of_order_one
     (h : ∀ x ∈ [[a, b]], L ≤ |derivWithin φ [[a, b]] x|)
     (hφ'_mono : MonotoneOn (derivWithin φ [[a, b]]) [[a, b]])
     (hL : 0 < L) :
-    ‖∫ x in a..b, exp (φ x * I) • ψ x‖ ≤
+    ‖∫ x in a..b, 𝐞 (φ x) • ψ x‖ ≤
       c 1 * L⁻¹ *
         (‖ψ b‖ + |∫ x in a..b, ‖derivWithin ψ [[a, b]] x‖|) := by
   refine norm_integral_exp_mul_I_smul_le_of_norm_integral_exp_mul_I
@@ -468,7 +463,7 @@ theorem norm_integral_exp_mul_I_le_of_order_ge_two {k : ℕ} (hk : 2 ≤ k)
     (hφ : ContDiffOn ℝ k φ [[a, b]]) (hψ : ContDiffOn ℝ 1 ψ [[a, b]])
     (h : ∀ x ∈ [[a, b]], L ≤ |iteratedDerivWithin k φ [[a, b]] x|)
     (hL : 0 < L) :
-    ‖∫ x in a..b, exp (φ x * I) • ψ x‖ ≤
+    ‖∫ x in a..b, 𝐞 (φ x) • ψ x‖ ≤
       c k * L ^ ((-1 : ℝ) / k) *
         (‖ψ b‖ + |∫ x in a..b, ‖derivWithin ψ [[a, b]] x‖|) := by
   refine norm_integral_exp_mul_I_smul_le_of_norm_integral_exp_mul_I

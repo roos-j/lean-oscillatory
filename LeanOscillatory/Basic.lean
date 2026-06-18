@@ -15,6 +15,8 @@ import Mathlib.Analysis.Fourier.FourierTransformDeriv
 
 namespace Complex
 
+open scoped ComplexConjugate
+
 /--
 Complex exponential as a function `ℝ → ℂ`, `x ↦ exp (x * I)`.
 TODO: Decide what name is best: `expI` seems very clear, but e.g. `cis` is also widely used
@@ -22,12 +24,38 @@ TODO: Decide what name is best: `expI` seems very clear, but e.g. `cis` is also 
 noncomputable def expI : ℝ → ℂ := fun x ↦ exp (x * I)
 
 
+-- TODO: Basic properties, mirror `cexp`
+#check cexp
+
+theorem expI_eq_exp_ofReal_mul_I (x : ℝ) : expI x = exp (x * I) := by rfl
+
+@[simp]
+theorem expI_zero : expI 0 = 1 := by simp [expI]
+
+@[simp]
+theorem norm_expI (x : ℝ) : ‖expI x‖ = 1 := by simp [expI]
+
+theorem conj_expI (x : ℝ) : conj (expI x) = expI (-x) := by simp [expI, ← exp_conj]
+
+
+section Continuous
+#check ContinuousOn.cexp
+
+variable {α : Type*} [TopologicalSpace α] {f : α → ℝ} {s : Set α}
+
+@[fun_prop]
+theorem ContinuousOn.expI (h : ContinuousOn f s) : ContinuousOn (fun y => expI (f y)) s :=
+  .cexp (.mul_const (Continuous.comp_continuousOn' continuous_ofReal h) I)
+
+end Continuous
+
 section Deriv
 
 #check hasDerivAt_exp
 
 theorem hasDerivAt_expI (x : ℝ) : HasDerivAt expI (I * expI x) x := by
-  sorry
+  convert! HasDerivAt.cexp (.mul_const (.ofReal_comp <| hasDerivAt_id _) I) using 1
+  simp [expI, mul_comm]
 
 -- variable {𝕜 : Type*} [NontriviallyNormedField 𝕜] [NormedAlgebra 𝕜 ℂ]
 -- TODO: Mirror the `cexp` API
@@ -40,14 +68,16 @@ variable {s : Set ℝ}
 #check HasDerivWithinAt.cexp
 
 theorem HasDerivAt.expI (hf : HasDerivAt f f' x) :
-    HasDerivAt (fun x ↦ expI (f x)) (I * expI (f x) * f') x :=
-  sorry
-  -- (hasDerivAt_exp (f x)).comp x hf
+    HasDerivAt (fun x ↦ expI (f x)) (I * expI (f x) * f') x := by
+  convert! HasDerivAt.cexp (.mul_const (.ofReal_comp <| hf) I) using 1
+  rw [expI_eq_exp_ofReal_mul_I]
+  ring
 
 theorem HasDerivWithinAt.expI (hf : HasDerivWithinAt f f' s x) :
-    HasDerivWithinAt (fun x => expI (f x)) (I * exp (f x) * f') s x :=
-  sorry
-
+    HasDerivWithinAt (fun x => expI (f x)) (I * expI (f x) * f') s x := by
+  convert! HasDerivWithinAt.cexp (.mul_const (.ofReal_comp <| hf) I) using 1
+  rw [expI_eq_exp_ofReal_mul_I]
+  ring
 
 end Deriv
 
