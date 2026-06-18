@@ -101,7 +101,7 @@ theorem _root_.IsPreconnected.forall_le_or_forall_le_of_forall_le_mabs {s : Set 
   · grind [MapsTo, mabs_of_one_lt]
   · grind [MapsTo, mabs_of_lt_one]
 
--- #find_home! IsPreconnected.forall_le_or_forall_le_of_forall_le_mabs
+#find_home! IsPreconnected.forall_le_or_forall_le_of_forall_le_mabs
 
 end GeneralLemma
 
@@ -406,12 +406,10 @@ private theorem norm_integral_exp_mul_I_smul_le_of_norm_integral_exp_mul_I {A : 
   have hasDeriv_ψ := fun x (hx : x ∈ [[a, b]]) ↦
     (hψ.contDiffWithinAt hx).differentiableWithinAt (by norm_num) |>.hasDerivWithinAt
   have cont_F' : ContinuousOn F' [[a, b]] := by fun_prop
-  have hasDeriv_F : ∀ x ∈ [[a, b]], HasDerivWithinAt F (F' x) [[a, b]] x := by
-    intro x hx
+  have hasDeriv_F : ∀ x ∈ [[a, b]], HasDerivWithinAt F (F' x) [[a, b]] x := fun x hx ↦ by
     have := FTCFilter.nhdsUIcc (h := ⟨hx⟩)
     apply integral_hasDerivWithinAt_right (t := [[a, b]])
-    · exact ContinuousOn.intervalIntegrable <| ContinuousOn.mono cont_F'
-        <| uIcc_subset_uIcc_left hx
+    · exact ContinuousOn.intervalIntegrable <| .mono cont_F' <| uIcc_subset_uIcc_left hx
     · apply ContinuousOn.stronglyMeasurableAtFilter_nhdsWithin cont_F' measurableSet_uIcc
     · exact ContinuousOn.continuousWithinAt cont_F' hx
   have h1 : ∫ x in a..b, F x • ψ' x = F b • ψ b - F a • ψ a - ∫ x in a..b, F' x • ψ x := by
