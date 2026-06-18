@@ -10,6 +10,8 @@ public import LeanOscillatory.Mathlib.Analysis.Complex.Trigonometric
 public import LeanOscillatory.Mathlib.Analysis.Calculus.TangentCone.Real
 public import LeanOscillatory.Mathlib.Analysis.Calculus.Deriv.Inv'
 
+public import LeanOscillatory.Basic
+
 public import Mathlib.Analysis.Calculus.IteratedDeriv.Defs
 public import Mathlib.MeasureTheory.Integral.IntervalIntegral.Basic
 
@@ -156,7 +158,7 @@ section SpecialCase
 theorem norm_integral_exp_mul_I_le_of_order_one'
     (hφ : ContDiffOn ℝ 2 φ [[a, b]]) (h : ∀ x ∈ [[a, b]], L ≤ |derivWithin φ [[a, b]] x|)
     (hφ'_mono : MonotoneOn (derivWithin φ [[a, b]]) [[a, b]]) (hL : 0 < L) :
-    ‖∫ x in a..b, exp (φ x * I)‖ ≤ c 1 * L⁻¹ := by
+    ‖∫ x in a..b, 𝐞 (φ x)‖ ≤ c 1 * L⁻¹ := by
   wlog! hab : a ≠ b
   · simp only [hab, integral_same, norm_zero]; positivity
   have hud := uniqueDiffOn_uIcc hab
