@@ -18,7 +18,11 @@ variable [LinearOrder β] [TopologicalSpace β] [OrderClosedTopology β] {f : α
 variable [Group β] [MulLeftMono β]
 
 
-@[to_additive]
+/-- On a preconnected set, if a continuous map has multiplicative absolute value bounded
+below by `L > 1`, then it is either `≥ L` everywhere or its inverse is `≥ L` everywhere. -/
+@[to_additive
+/-- On a preconnected set, if a continuous map has absolute value bounded below by `L > 0`,
+then it is either `≥ L` everywhere or its negative is `≥ L` everywhere. -/]
 theorem IsPreconnected.forall_le_or_forall_le_of_forall_le_mabs {s : Set α}
     (hs : IsPreconnected s) {L : β} (hL : 1 < L) {f: α → β}
     (hfcont: ContinuousOn f s) (hf : ∀ x ∈ s, L ≤ |f x|ₘ) :
