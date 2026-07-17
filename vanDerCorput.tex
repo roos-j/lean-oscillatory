@@ -1,0 +1,64 @@
+\documentclass{article}
+\usepackage{geometry}[margin=1in]
+
+\usepackage{amsthm,amssymb,amsmath}
+
+\newtheorem{lemma}{Lemma}
+
+\title{Short proof of the sharp first derivative case of van der Corput's lemma}
+\author{JR}
+\date{July 2026}
+
+\begin{document}
+
+\maketitle
+
+% \section{Introduction}
+
+
+\begin{lemma}[Second mean value theorem]\label{smvt}
+Let $f:[a,b]\to\mathbb{R}$ be nonnegative and nonincreasing and $g:[a,b]\to\mathbb{R}$ integrable. Then there exists $\xi\in [a,b]$ such that
+\[ \int_a^b f(x)g(x)\,dx = f(a) \int_a^\xi g(x)\,dx. \]
+\end{lemma}
+
+\begin{lemma}\label{mvt-ineq}
+If $f:[a,b]\to \mathbb{R}$ with $f\ge 0$ and $f$ nonincreasing, and $g:[a,b]\to \mathbb{C}$, then
+\[ \Big|\int_a^b f(x)g(x)\,dx\Big| \le  f(a) \sup_{\xi\in [a,b]} \Big|\int_a^\xi g(x)\,dx\Big| \]
+\end{lemma}
+
+\noindent {\em Remark.} This continues to hold for Banach-space valued $g$ (by the Hahn--Banach theorem).
+
+\begin{proof}
+This follows from the second mean value theorem for integrals, Lemma \ref{smvt}.
+\end{proof}
+
+The following sharp version of the first derivative case of van der Corput's lemma is proved in \cite[Cor. 5]{Rog03} using a complex version of the second mean value theorem, which gives a short and elegant proof. The proof can be further shortened by instead using a mean-value inequality, Lemma \ref{mvt-ineq}.
+
+\begin{lemma}[van der Corput's lemma, order one case]
+Let $\phi:[a,b]\to\mathbb{R}$ be continuous on $[a,b]$ and differentiable on $(a,b)$. Assume that $\phi'$ is increasing with $\phi'\ge \lambda>0$ on $(a,b)$.
+Then
+\[ \Big|\int_a^b e^{i\phi(t)}\,dt\Big|\le \frac{2}{\lambda}. \]
+\end{lemma}
+
+\noindent {\em Remark.} The constant $2$ is sharp in this inequality (consider $\phi(t)=t$ on $(a,b)=(0,\pi)$).
+
+\begin{proof}
+Changing variables,
+\[ \int_a^b e^{i\phi(t)}\,dt = \int_{\phi(a)}^{\phi(b)} e^{iy} \frac1{ \phi'(\phi^{-1}(y))} dy = \int_{\phi(a)}^{\phi(b)} e^{iy} g(y)\,dy, \]
+where $g(y)=1/(\phi'(\phi^{-1}(y)))$ for $y\in (\phi(a), \phi(b))$ and $g(\phi(a))=1/\lambda$, $g(\phi(b))=0$.
+Since $g$ is positive and nonincreasing on $[a,b]$, we may apply Lemma \ref{mvt-ineq} and obtain
+\[ \Big|\int_a^b e^{i\phi(t)}\,dt\Big| \le \frac{1}{\lambda} \sup_{\xi\in [a,b]} \Big|\int_a^\xi e^{iy}\,dy\Big| \le \frac{2}{\lambda},
+\]
+since
+$\Big|\int_a^\xi e^{iy}\,dy\Big|=|e^{ia}-e^{i\xi}|\le 2$ and $\phi'(a)>\lambda$.
+
+\end{proof}
+
+\bibliographystyle{plain}
+\begin{thebibliography}{ABCD99}
+
+\bibitem{Rog03} K. Rogers. Sharp van der Corput estimates and minimal divided differences. arXiv:0311013, 2003.
+
+\end{thebibliography}
+
+\end{document}
