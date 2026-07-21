@@ -2,3 +2,8 @@
 Test.lean
 .vscode
 Issues.lean
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.synctex.gz
